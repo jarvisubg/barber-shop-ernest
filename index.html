@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="it"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#090a0b">
+  <title>Barber Shop Ernest | Taglio e barba a Faenza</title>
+  <meta name="description" content="Barber Shop Ernest. Taglio uomo, cura della barba e servizio completo in uno spazio contemporaneo. Corso Mazzini 128, Faenza.">
+  <link rel="icon" href="images/barber-ernest/logo-mark.svg" type="image/svg+xml">
+  <meta property="og:type" content="business.business">
+  <meta property="og:title" content="Barber Shop Ernest | Taglio e barba a Faenza">
+  <meta property="og:description" content="Taglio uomo, cura della barba e servizio completo in uno spazio contemporaneo.">
+  <meta property="og:image" content="images/barber-ernest/lavori/taglio-01.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800&amp;family=Saira:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="preload" href="images/barber-ernest/shop-hero.webp" as="image" type="image/webp" fetchpriority="high">
+  <link rel="stylesheet" href="booking/booking.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      color-scheme: dark;
+      --ink: #090a0b;
+      --ink-raised: #111315;
+      --steel: #c9cdd0;
+      --paper: #f1f2f0;
+      --muted: #a7abad;
+      --line: rgba(201, 205, 208, .22);
+      --display: "Saira Condensed", "HelveticaNeue-CondensedBold", "Arial Narrow", sans-serif;
+      --body: "Saira", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --max: 1280px;
+      --header-h: 68px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--header-h) + 20px);
+    }
+    body {
+      margin: 0;
+      background: var(--ink);
+      color: var(--paper);
+      font: 400 16px/1.55 var(--body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button { font: inherit; }
+    :focus-visible { outline: 2px solid var(--paper); outline-offset: 4px; }
+
+    .shell { width: min(calc(100% - 40px), var(--max)); margin-inline: auto; }
+    .display {
+      font-family: var(--display);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: .9;
+      text-transform: uppercase;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 20px;
+      top: -60px;
+      z-index: 6;
+      padding: 12px 18px;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: top 180ms ease;
+    }
+
+    .skip-link:focus-visible { top: 14px; }
+
+    .site-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 4;
+      height: var(--header-h);
+      border-bottom: 1px solid rgba(241, 242, 240, .16);
+      background: rgba(9, 10, 11, .88);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand-link {
+      display: block;
+      width: 164px;
+      flex: 0 0 auto;
+    }
+
+    .brand-logo--compact { width: 100%; height: auto; }
+
+    .nav-links { display: none; }
+
+    .button {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 0 20px;
+      border: 1px solid var(--paper);
+      border-radius: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-decoration: none;
+      text-transform: uppercase;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+    }
+
+    .button::after { content: "↗"; font-size: 1.05rem; line-height: 1; }
+    .button:hover { background: transparent; color: var(--paper); }
+    .button:active { transform: translateY(1px); }
+    .button-ghost { background: rgba(9, 10, 11, .48); color: var(--paper); }
+
+    .hero {
+      position: relative;
+      min-height: 100dvh;
+      overflow: hidden;
+      isolation: isolate;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-media, .hero-media::after { position: absolute; inset: 0; }
+    .hero-media { z-index: -2; background: var(--ink-raised); }
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 46%;
+    }
+
+    .hero-media::after {
+      content: "";
+      background: linear-gradient(180deg, rgba(9, 10, 11, .22) 0%, rgba(9, 10, 11, .42) 46%, rgba(9, 10, 11, .94) 100%);
+    }
+
+    .hero-grid {
+      min-height: 100dvh;
+      display: grid;
+      align-items: end;
+      padding-block: calc(var(--header-h) + 40px) 38px;
+    }
+
+    .hero-copy { max-width: 700px; }
+    .hero-logo { display: none; }
+    .hero h1 { margin: 0; font-size: clamp(3.2rem, 13.5vw, 5rem); text-wrap: balance; }
+    .hero h1 span { display: block; }
+    .hero p { max-width: 34rem; margin: 24px 0 0; color: #e1e3e2; font-size: 1.02rem; }
+    .hero-actions { display: grid; gap: 10px; margin-top: 28px; }
+
+    @media (max-width: 479px) {
+      .brand-link { width: 160px; }
+      .nav > .button { padding-inline: 14px; font-size: .7rem; }
+    }
+
+    .section { padding-block: 88px; border-bottom: 1px solid var(--line); }
+    .section h2 { max-width: 780px; margin: 0; font-size: clamp(2.7rem, 12vw, 5.8rem); }
+    .section-intro { max-width: 560px; margin: 24px 0 0; color: var(--muted); font-size: 1.05rem; }
+
+    .services { margin-top: 56px; border-top: 1px solid var(--line); }
+    .service {
+      display: grid;
+      gap: 14px;
+      padding: 28px 0 32px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .service { transition: background 220ms ease; }
+    .service:hover { background: var(--ink-raised); }
+    .service h3 { margin: 0; font-size: clamp(2rem, 9vw, 4.2rem); }
+    .service p { max-width: 480px; margin: 0; color: var(--muted); }
+
+    .service-mark {
+      color: var(--steel);
+      font-size: 1.3rem;
+      transition: transform 220ms cubic-bezier(.16, 1, .3, 1), color 220ms ease;
+    }
+
+    .service:hover .service-mark { color: var(--paper); transform: translate(4px, -4px); }
+
+    .shop-story { overflow: clip; }
+    .shop-story .section-intro { max-width: 32rem; }
+    .shop-photo {
+      position: relative;
+      width: calc(100% + 40px);
+      aspect-ratio: 3 / 4;
+      margin: 40px 0 0 -20px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--ink-raised);
+    }
+
+    .shop-photo picture { display: block; width: 100%; height: 100%; }
+
+    .shop-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 50%;
+      filter: contrast(1.03) saturate(.86);
+    }
+
+    .works-rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 76%;
+      gap: 14px;
+      margin-top: 48px;
+      padding-inline: 20px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+
+    .works-rail::-webkit-scrollbar { display: none; }
+
+    .work { margin: 0; scroll-snap-align: center; }
+
+    .work-frame {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--ink-raised);
+    }
+
+    .work-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.03) saturate(.86);
+      transition: transform 620ms cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .work:hover .work-frame img { transform: scale(1.045); }
+
+    .work figcaption {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .74rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .work-index { color: var(--steel); font-variant-numeric: tabular-nums; }
+
+    .works-hint {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: .74rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .method-grid {
+      display: grid;
+      gap: 1px;
+      margin-top: 52px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .method-item { min-height: 220px; padding: 28px; background: var(--ink-raised); }
+    .method-item strong { display: block; font: 800 clamp(2rem, 8vw, 4rem)/.95 var(--display); text-transform: uppercase; }
+    .method-item p { max-width: 28rem; margin: 18px 0 0; color: var(--muted); }
+    .method-item:nth-child(2) { background: #171a1c; }
+
+    .booking {
+      position: relative;
+      min-height: 78dvh;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      background: var(--ink-raised);
+    }
+
+    .booking h2 { max-width: 900px; }
+    .booking p { max-width: 520px; margin: 28px 0 0; color: var(--muted); }
+    .booking .button { width: 100%; margin-top: 34px; }
+
+    .facts {
+      display: grid;
+      gap: 1px;
+      margin-top: 48px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .fact { padding: 20px; background: var(--ink); }
+    .fact dt { color: var(--muted); font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; }
+    .fact dd { margin: 8px 0 0; font-weight: 700; }
+
+    footer { padding: 32px 0 42px; color: var(--muted); }
+    .footer-grid { display: grid; gap: 24px; }
+    .footer-logo { width: 164px; height: auto; }
+    footer p { margin: 0; font-size: .82rem; }
+
+    dialog {
+      width: min(100% - 32px, 520px);
+      padding: 0;
+      border: 1px solid var(--steel);
+      border-radius: 0;
+      background: var(--ink-raised);
+      color: var(--paper);
+    }
+
+    dialog::backdrop { background: rgba(9, 10, 11, .82); backdrop-filter: blur(8px); }
+    .dialog-inner { padding: 34px; }
+    .dialog-inner h2 { margin: 0; font-size: clamp(2.4rem, 10vw, 4rem); }
+    .dialog-inner p { margin: 20px 0 28px; color: var(--muted); }
+    .dialog-inner .button { width: 100%; }
+    .dialog-inner .button::after { content: "×"; }
+
+    @media (min-width: 720px) {
+      .shell { width: min(calc(100% - 64px), var(--max)); }
+      .nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; }
+      .nav-links a { color: var(--muted); font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
+      .nav-links a { position: relative; padding-block: 6px; transition: color 200ms ease; }
+      .nav-links a:hover { color: var(--paper); }
+      .nav-links a[aria-current="true"] { color: var(--paper); }
+
+      .nav-links a[aria-current="true"]::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0;
+        height: 1px;
+        background: var(--paper);
+      }
+      .hero-actions { display: flex; }
+      .hero-actions .button { width: auto; }
+      .service { grid-template-columns: minmax(260px, .9fr) 1.1fr auto; align-items: center; min-height: 154px; }
+      .service:nth-child(2) { padding-left: 8vw; }
+      .service:nth-child(3) { padding-left: 3vw; }
+      .method-grid { grid-template-columns: 1.25fr .75fr; }
+      .method-item:first-child { grid-row: span 2; min-height: 440px; display: flex; flex-direction: column; justify-content: flex-end; }
+      .facts { grid-template-columns: repeat(3, 1fr); }
+      .footer-grid { grid-template-columns: auto 1fr; align-items: end; }
+      footer p { justify-self: end; text-align: right; }
+      .shop-photo { width: 100%; aspect-ratio: 8 / 5; margin: 56px 0 0; }
+    }
+
+    @media (min-width: 980px) {
+      .hero-media { left: 46%; }
+      .hero-media::after { background: linear-gradient(90deg, var(--ink) 0%, rgba(9, 10, 11, .86) 5%, rgba(9, 10, 11, .05) 42%, rgba(9, 10, 11, .08) 100%); }
+      .hero-grid { align-items: center; padding-block: calc(var(--header-h) + 24px) 24px; }
+      .hero-copy { width: 48%; }
+      .hero-logo { display: block; width: 150px; height: auto; margin: 0 0 20px; }
+      .hero h1 { font-size: clamp(3.7rem, 5.2vw, 5.2rem); }
+      .hero h1 span { white-space: nowrap; }
+      .hero p { font-size: 1.08rem; }
+      .section { padding-block: 128px; }
+      .shop-photo { width: 92%; margin: 64px 0 0 8%; }
+      .booking .button { width: auto; }
+
+      .works-rail {
+        width: min(calc(100% - 64px), var(--max));
+        margin-inline: auto;
+        grid-auto-flow: row;
+        grid-template-columns: repeat(6, 1fr);
+        grid-auto-columns: auto;
+        gap: 26px 24px;
+        padding-inline: 0;
+        overflow: visible;
+        scroll-snap-type: none;
+      }
+
+      .work:nth-child(1) { grid-column: 1 / span 3; }
+      .work:nth-child(2) { grid-column: 4 / span 3; margin-top: 88px; }
+      .work:nth-child(3) { grid-column: 1 / span 2; }
+      .work:nth-child(4) { grid-column: 3 / span 2; }
+      .work:nth-child(5) { grid-column: 5 / span 2; margin-top: 76px; }
+
+      .works-hint { display: none; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-media img { animation: hero-settle 1.2s cubic-bezier(.16, 1, .3, 1) both; }
+      .hero-copy > * { animation: rise-in .65s cubic-bezier(.16, 1, .3, 1) both; }
+      .hero-copy > :nth-child(2) { animation-delay: 80ms; }
+      .hero-copy > :nth-child(3) { animation-delay: 150ms; }
+      .hero-copy > :nth-child(4) { animation-delay: 220ms; }
+      @keyframes rise-in { from { opacity: 0; transform: translateY(14px); } }
+      @keyframes hero-settle { from { opacity: .7; transform: scale(1.035); } to { opacity: 1; transform: scale(1); } }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+
+    /* --- barra "demo" ---------------------------------------------------
+       Finché le prenotazioni restano nel browser di chi visita e non su un
+       server, questa barra va tenuta ovunque il sito sia raggiungibile da
+       qualcuno che non sia noi: senza, un cliente vero può credere di aver
+       prenotato davvero. Si rimuove al go-live sul dominio del negozio,
+       insieme al collegamento al backend. */
+    :root { --demo-h: 38px; }
+    body { padding-top: var(--demo-h); }
+    html { scroll-padding-top: calc(var(--header-h) + var(--demo-h) + 20px); }
+    .site-header { top: var(--demo-h); }
+    .bk-overlay { top: var(--demo-h); }
+
+    .demo-bar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      height: var(--demo-h);
+      padding: 0 16px;
+      background: #FF6B00;
+      color: #131211;
+      font: 800 .68rem/1 var(--display);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .demo-bar p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .demo-bar span { opacity: .62; }
+
+    .demo-bar a {
+      flex: 0 0 auto;
+      padding: 7px 11px;
+      border: 1px solid #131211;
+      color: #131211;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .demo-bar a:hover { background: #131211; color: #FF6B00; }
+    @media (max-width: 560px) { .demo-bar span { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="demo-bar">
+    <p>Demo — sito dimostrativo <span>· non è il sito ufficiale, le prenotazioni non sono reali</span></p>
+    <a href="booking/admin.html" data-vai-gestionale>Gestionale</a>
+  </div>
+
+  <a class="skip-link" href="#top">Vai al contenuto</a>
+  <header class="site-header">
+    <nav class="nav shell" aria-label="Navigazione principale">
+      <a class="brand-link" href="#top" aria-label="Barber Shop Ernest, torna all'inizio">
+        <img class="brand-logo--compact" src="images/barber-ernest/logo-compact.svg" width="1000" height="200" alt="">
+      </a>
+      <div class="nav-links">
+        <a href="#servizi">Servizi</a>
+        <a href="#lavori">Lavori</a>
+        <a href="#negozio" aria-current="true">Il negozio</a>
+        <a href="#informazioni">Informazioni</a>
+      </div>
+      <a class="button" href="#prenota" data-booking-trigger="">Prenota ora</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <picture class="hero-media">
+        <img src="images/barber-ernest/shop-hero.webp" width="765" height="1020" alt="" fetchpriority="high">
+      </picture>
+      <div class="hero-grid shell">
+        <div class="hero-copy">
+          <img class="hero-logo" src="images/barber-ernest/logo-full.svg" width="1061" height="783" alt="Barber Shop Ernest">
+          <h1 class="display" id="hero-title"><span>Taglio preciso.</span><span>Stile senza rumore.</span></h1>
+          <p>Uno spazio contemporaneo dedicato alla cura maschile, dove taglio e barba trovano il giusto equilibrio.</p>
+          <div class="hero-actions">
+            <a class="button" href="#prenota" data-booking-trigger="">Prenota ora</a>
+            <a class="button button-ghost" href="#servizi">Scopri i servizi</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="servizi" aria-labelledby="servizi-title">
+      <div class="shell">
+        <h2 class="display" id="servizi-title">Il tuo stile, curato bene.</h2>
+        <p class="section-intro">Servizi essenziali per mantenere il tuo look ordinato, definito e personale.</p>
+        <div class="services">
+          <article class="service">
+            <h3 class="display">Taglio uomo</h3>
+            <p>Un taglio costruito sulla forma del viso e sullo stile che vuoi portare.</p>
+            <span class="service-mark" aria-hidden="true">↗</span>
+          </article>
+          <article class="service">
+            <h3 class="display">Cura della barba</h3>
+            <p>Definizione, ordine e attenzione ai dettagli per una barba sempre curata.</p>
+            <span class="service-mark" aria-hidden="true">↗</span>
+          </article>
+          <article class="service">
+            <h3 class="display">Taglio e barba</h3>
+            <p>Un servizio completo per un risultato coerente, pulito e personale.</p>
+            <span class="service-mark" aria-hidden="true">↗</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="lavori" aria-labelledby="lavori-title">
+      <div class="shell">
+        <h2 class="display" id="lavori-title">Lavori fatti in negozio.</h2>
+        <p class="section-intro">Tagli reali, fotografati in poltrona. Nessun catalogo: quello che vedi è quello che esce da qui.</p>
+        <p class="works-hint" aria-hidden="true">Scorri →</p>
+      </div>
+      <div class="works-rail">
+        <figure class="work">
+          <div class="work-frame">
+            <img src="images/barber-ernest/lavori/taglio-01.webp" width="1280" height="1600" loading="lazy" alt="Low fade sfumato sulla nuca con top testurizzato e frangia mossa in avanti">
+          </div>
+          <figcaption><span>Low fade, top testurizzato</span><span class="work-index">01</span></figcaption>
+        </figure>
+        <figure class="work">
+          <div class="work-frame">
+            <img src="images/barber-ernest/lavori/taglio-02.webp" width="1280" height="1600" loading="lazy" alt="Undercut con linea rasata netta che separa il top lungo pettinato all'indietro dai lati corti">
+          </div>
+          <figcaption><span>Undercut con linea rasata</span><span class="work-index">02</span></figcaption>
+        </figure>
+        <figure class="work">
+          <div class="work-frame">
+            <img src="images/barber-ernest/lavori/taglio-03.webp" width="1280" height="1600" loading="lazy" alt="Mid fade sui lati con contorno pulito attorno all'orecchio e top corto pettinato all'indietro">
+          </div>
+          <figcaption><span>Mid fade, top corto</span><span class="work-index">03</span></figcaption>
+        </figure>
+        <figure class="work">
+          <div class="work-frame">
+            <img src="images/barber-ernest/lavori/taglio-04.webp" width="1280" height="1600" loading="lazy" alt="Mid fade pulito sui lati in contrasto con un top riccio e voluminoso">
+          </div>
+          <figcaption><span>Mid fade, riccio voluminoso</span><span class="work-index">04</span></figcaption>
+        </figure>
+        <figure class="work">
+          <div class="work-frame">
+            <img src="images/barber-ernest/lavori/taglio-05.webp" width="1280" height="1600" loading="lazy" alt="Taper corto su nuca e contorno orecchio con top lungo pettinato all'indietro">
+          </div>
+          <figcaption><span>Taper, top all'indietro</span><span class="work-index">05</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section shop-story" id="negozio" aria-labelledby="negozio-title">
+      <div class="shell">
+        <h2 class="display" id="negozio-title">Un ambiente che parla il tuo stile.</h2>
+        <p class="section-intro">Linee pulite, atmosfera contemporanea e una postazione dedicata alla cura personale.</p>
+        <figure class="shop-photo">
+          <picture>
+            <source media="(min-width: 720px)" srcset="images/barber-ernest/shop-section-desktop-hq.webp" type="image/webp">
+            <img src="images/barber-ernest/shop-section-mobile-hq.webp" width="1530" height="2040" loading="lazy" alt="Interno del Barber Shop Ernest con poltrone nere, pavimento effetto marmo e soffitto a LED geometrici">
+          </picture>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="metodo-title">
+      <div class="shell">
+        <h2 class="display" id="metodo-title">Ogni dettaglio conta.</h2>
+        <div class="method-grid">
+          <article class="method-item">
+            <strong>Consulenza</strong>
+            <p>Si parte dal tuo stile, dalla forma del viso e dal risultato che vuoi ottenere.</p>
+          </article>
+          <article class="method-item">
+            <strong>Precisione</strong>
+            <p>Taglio e barba vengono costruiti con attenzione, senza passaggi lasciati al caso.</p>
+          </article>
+          <article class="method-item">
+            <strong>Finitura</strong>
+            <p>Gli ultimi dettagli danno ordine al look e rendono il risultato completo.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section booking" id="prenota" aria-labelledby="prenota-title">
+      <div class="shell">
+        <h2 class="display" id="prenota-title">Il prossimo taglio inizia qui.</h2>
+        <p>Scegli servizio, barbiere e orario. Ricevi subito un codice per gestire o disdire l'appuntamento.</p>
+        <button class="button" type="button" data-booking-trigger="">Prenota ora</button>
+        <dl class="facts" id="informazioni">
+          <div class="fact">
+            <dt>Indirizzo</dt>
+            <dd><a href="https://www.google.com/maps/search/?api=1&amp;query=Corso+Giuseppe+Mazzini+128%2C+48018+Faenza+RA">Corso Giuseppe Mazzini 128, 48018 Faenza (RA)</a></dd>
+          </div>
+          <div class="fact">
+            <dt>Orari</dt>
+            <dd>Lun 14-21 · Mar-Ven 10-12, 13:30-21 · Sab 9-12, 13:30-20 · Dom chiuso</dd>
+          </div>
+          <div class="fact">
+            <dt>Telefono</dt>
+            <dd><a href="tel:+393280774789">328 077 4789</a></dd>
+          </div>
+        </dl>
+        <div id="booking-root" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-grid shell">
+      <img class="footer-logo" src="images/barber-ernest/logo-full.svg" width="1061" height="783" loading="lazy" alt="Barber Shop Ernest">
+      <p>Corso Giuseppe Mazzini 128, Faenza (RA) · <a href="tel:+393280774789">328 077 4789</a><br>Taglio, barba e cura dei dettagli.</p>
+    </div>
+  </footer>
+
+  <script src="booking/tempo.js"></script>
+  <script src="booking/seed.js"></script>
+  <script src="booking/engine.js"></script>
+  <script src="booking/selfcheck.js"></script>
+  <script src="booking/widget-viste.js"></script>
+  <script src="booking/widget.js"></script>
+
+  <script>
+    // Evidenzia in nav la sezione visibile. ponytail: IntersectionObserver, niente listener di scroll.
+    const navLinks = new Map(
+      [...document.querySelectorAll('.nav-links a')].map((a) => [a.hash.slice(1), a])
+    );
+
+    const spy = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const link = navLinks.get(entry.target.id);
+        if (!link) continue;
+        if (entry.isIntersecting) {
+          navLinks.forEach((a) => a.removeAttribute('aria-current'));
+          link.setAttribute('aria-current', 'true');
+        }
+      }
+    }, { rootMargin: '-45% 0px -50% 0px' });
+
+    navLinks.forEach((_, id) => {
+      const section = document.getElementById(id);
+      if (section) spy.observe(section);
+    });
+  </script>
+
+
+</body></html>
