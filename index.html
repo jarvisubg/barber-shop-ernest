@@ -288,19 +288,6 @@
       text-transform: uppercase;
     }
 
-    .method-grid {
-      display: grid;
-      gap: 1px;
-      margin-top: 52px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .method-item { min-height: 220px; padding: 28px; background: var(--ink-raised); }
-    .method-item strong { display: block; font: 800 clamp(2rem, 8vw, 4rem)/.95 var(--display); text-transform: uppercase; }
-    .method-item p { max-width: 28rem; margin: 18px 0 0; color: var(--muted); }
-    .method-item:nth-child(2) { background: #171a1c; }
-
     .booking {
       position: relative;
       min-height: 78dvh;
@@ -381,8 +368,6 @@
       .service { grid-template-columns: minmax(260px, .9fr) 1.1fr auto; align-items: center; min-height: 154px; }
       .service:nth-child(2) { padding-left: 8vw; }
       .service:nth-child(3) { padding-left: 3vw; }
-      .method-grid { grid-template-columns: 1.25fr .75fr; }
-      .method-item:first-child { grid-row: span 2; min-height: 440px; display: flex; flex-direction: column; justify-content: flex-end; }
       .facts { grid-template-columns: repeat(3, 1fr); }
       .footer-grid { grid-template-columns: auto 1fr; align-items: end; }
       footer p { justify-self: end; text-align: right; }
@@ -548,26 +533,6 @@
             <img src="images/barber-ernest/shop-section-mobile-hq.webp" width="1530" height="2040" loading="lazy" alt="Interno del Barber Shop Ernest con poltrone nere, pavimento effetto marmo e soffitto a LED geometrici">
           </picture>
         </figure>
-      </div>
-    </section>
-
-    <section class="section" aria-labelledby="metodo-title">
-      <div class="shell">
-        <h2 class="display" id="metodo-title">Ogni dettaglio conta.</h2>
-        <div class="method-grid">
-          <article class="method-item">
-            <strong>Consulenza</strong>
-            <p>Si parte dal tuo stile, dalla forma del viso e dal risultato che vuoi ottenere.</p>
-          </article>
-          <article class="method-item">
-            <strong>Precisione</strong>
-            <p>Taglio e barba vengono costruiti con attenzione, senza passaggi lasciati al caso.</p>
-          </article>
-          <article class="method-item">
-            <strong>Finitura</strong>
-            <p>Gli ultimi dettagli danno ordine al look e rendono il risultato completo.</p>
-          </article>
-        </div>
       </div>
     </section>
 
