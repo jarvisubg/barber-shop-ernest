@@ -331,6 +331,20 @@
     .footer-logo { width: 164px; height: auto; }
     footer p { margin: 0; font-size: .82rem; }
 
+    .footer-links { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); }
+    .footer-links a {
+      display: inline-block;
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: color 200ms ease, border-color 200ms ease;
+    }
+    .footer-links a:hover { color: var(--paper); border-color: var(--paper); }
+
     dialog {
       width: min(100% - 32px, 520px);
       padding: 0;
@@ -423,58 +437,9 @@
       html { scroll-behavior: auto; }
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
-
-    /* --- barra "demo" ---------------------------------------------------
-       Finché le prenotazioni restano nel browser di chi visita e non su un
-       server, questa barra va tenuta ovunque il sito sia raggiungibile da
-       qualcuno che non sia noi: senza, un cliente vero può credere di aver
-       prenotato davvero. Si rimuove al go-live sul dominio del negozio,
-       insieme al collegamento al backend. */
-    :root { --demo-h: 38px; }
-    body { padding-top: var(--demo-h); }
-    html { scroll-padding-top: calc(var(--header-h) + var(--demo-h) + 20px); }
-    .site-header { top: var(--demo-h); }
-    .bk-overlay { top: var(--demo-h); }
-
-    .demo-bar {
-      position: fixed;
-      inset: 0 0 auto;
-      z-index: 80;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      height: var(--demo-h);
-      padding: 0 16px;
-      background: #FF6B00;
-      color: #131211;
-      font: 800 .68rem/1 var(--display);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    .demo-bar p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .demo-bar span { opacity: .62; }
-
-    .demo-bar a {
-      flex: 0 0 auto;
-      padding: 7px 11px;
-      border: 1px solid #131211;
-      color: #131211;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .demo-bar a:hover { background: #131211; color: #FF6B00; }
-    @media (max-width: 560px) { .demo-bar span { display: none; } }
   </style>
 </head>
 <body>
-  <div class="demo-bar">
-    <p>Demo — sito dimostrativo <span>· non è il sito ufficiale, le prenotazioni non sono reali</span></p>
-    <a href="booking/admin.html" data-vai-gestionale>Gestionale</a>
-  </div>
-
   <a class="skip-link" href="#top">Vai al contenuto</a>
   <header class="site-header">
     <nav class="nav shell" aria-label="Navigazione principale">
@@ -634,6 +599,9 @@
     <div class="footer-grid shell">
       <img class="footer-logo" src="images/barber-ernest/logo-full.svg" width="1061" height="783" loading="lazy" alt="Barber Shop Ernest">
       <p>Corso Giuseppe Mazzini 128, Faenza (RA) · <a href="tel:+393280774789">328 077 4789</a><br>Taglio, barba e cura dei dettagli.</p>
+    </div>
+    <div class="footer-links shell">
+      <a href="booking/admin.html" data-vai-gestionale>Area riservata — Gestione appuntamenti</a>
     </div>
   </footer>
 
