@@ -28,7 +28,8 @@
     --body: "Saira", "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
-  body { margin: 0; background: var(--ink); color: var(--paper); font: 400 15px/1.5 var(--body); }
+  html { background: var(--ink); overscroll-behavior-y: none; }
+  body { margin: 0; background: var(--ink); color: var(--paper); font: 400 15px/1.5 var(--body); overscroll-behavior-y: none; }
   /* deve battere i display: grid/flex dichiarati sotto, altrimenti l'attributo hidden non nasconde nulla */
   [hidden] { display: none !important; }
   h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: -.01em; text-transform: uppercase; margin: 0; }
@@ -46,7 +47,7 @@
   }
   .bar-row { display: flex; align-items: center; gap: 14px; min-height: 60px; flex-wrap: wrap; }
   .bar-row h1 { font-size: 1.2rem; letter-spacing: .06em; margin-right: auto; }
-  .tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; overscroll-behavior-x: contain; border-bottom: 1px solid var(--line); }
   .tab {
     flex: 0 0 auto; padding: 12px 16px; border: 0; border-bottom: 2px solid transparent;
     background: none; color: var(--muted); cursor: pointer;
