@@ -128,9 +128,13 @@
 
   /* ------------------------------------------------------- regole listino */
 
+  /* Risolve gli id senza guardare `attivo`: un servizio tolto dal listino resta
+     leggibile sulle prenotazioni già prese, altrimenti il gestionale non
+     riuscirebbe più nemmeno a spostarle. Il filtro su `attivo` vale solo su
+     ciò che il cliente sceglie ex novo — lo applica creaPrenotazione. */
   function servizi(ids) {
     return ids.map(function (id) { return byId(db.services, id); })
-      .filter(function (s) { return s && s.attivo; });
+      .filter(function (s) { return !!s; });
   }
 
   function totali(ids) {
@@ -222,6 +226,11 @@
     var errore = validaSelezione(p.serviziIds);
     if (errore) return { ok: false, error: errore };
 
+    var fuoriListino = servizi(p.serviziIds).filter(function (s) { return !s.attivo; })[0];
+    if (fuoriListino) {
+      return { ok: false, error: 'Il servizio "' + fuoriListino.nome + '" non è più disponibile.' };
+    }
+
     if (!p.nome || !String(p.nome).trim()) return { ok: false, error: 'Inserisci il nome.' };
     if (!p.cognome || !String(p.cognome).trim()) return { ok: false, error: 'Inserisci il cognome.' };
     if (!telefonoValido(p.telefono)) return { ok: false, error: 'Numero di telefono non valido.' };
@@ -259,6 +268,14 @@
       }
       if (inizio < new Date(Date.now() + db.settings.anticipoMinimoMinuti * 60000)) {
         return { ok: false, error: 'Questo orario è troppo vicino. Scegline uno più avanti o chiama il negozio.' };
+      }
+      // il limite vale solo online: al banco il negozio segna anche a sei mesi
+      if (p.origine !== 'manuale' && inizio > addDays(new Date(), db.settings.giorniAvanti)) {
+        return {
+          ok: false,
+          error: 'Si può prenotare al massimo ' + db.settings.giorniAvanti +
+            ' giorni in anticipo. Per date più lontane chiama il negozio.'
+        };
       }
       if (!dentroOrario(barberId, inizio, fine)) {
         return { ok: false, error: 'Fuori dagli orari di lavoro di ' + barbiere.nome + '.' };
@@ -322,13 +339,16 @@
       }
     }
 
+    // validare prima di scrivere: uscire a metà lascerebbe il record modificato
+    // in memoria mentre la finestra mostra l'errore e nulla viene salvato
+    if (patch.telefono !== undefined && !telefonoValido(patch.telefono)) {
+      return { ok: false, error: 'Numero di telefono non valido.' };
+    }
+
     ['nome', 'cognome', 'note', 'lunghezzaCapelli'].forEach(function (k) {
       if (patch[k] !== undefined) b[k] = patch[k];
     });
-    if (patch.telefono !== undefined) {
-      if (!telefonoValido(patch.telefono)) return { ok: false, error: 'Numero di telefono non valido.' };
-      b.telefono = normalizzaTelefono(patch.telefono);
-    }
+    if (patch.telefono !== undefined) b.telefono = normalizzaTelefono(patch.telefono);
     b.barberId = barberId;
     b.inizio = stamp(inizio);
     b.fine = stamp(fine);
@@ -381,6 +401,15 @@
     Object.keys(SEED.SETTINGS).forEach(function (k) {
       if (db.settings[k] === undefined) db.settings[k] = SEED.SETTINGS[k];
     });
+    /* Il buffer di default era 5 minuti. Applicato su entrambi i lati e
+       arrotondato alla griglia da 15, un appuntamento da 30 minuti ne occupava
+       75. Chi ha già i dati sul browser va portato al nuovo default una volta
+       sola: il ciclo qui sopra riempie solo le chiavi mancanti. */
+    if (db.schema !== 2) {
+      if (db.settings.buffer === 5) db.settings.buffer = 0;
+      db.schema = 2;
+      save();
+    }
     if (db.seedDay !== dayKey(new Date())) popolaDemo();
     return db;
   }

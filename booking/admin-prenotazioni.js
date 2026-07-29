@@ -61,7 +61,9 @@
     var ora = b ? b.inizio.slice(11) : (pre.ora || '10:00');
     var barberId = b ? b.barberId : (pre.barberId || (attivi()[0] || {}).id);
 
-    var servizi = E.db.services.filter(function (s) { return s.attivo; })
+    // anche i servizi tolti dal listino, se sono già su questa prenotazione:
+    // altrimenti riaprirla per spostarla li cancellerebbe di nascosto
+    var servizi = E.db.services.filter(function (s) { return s.attivo || sel.indexOf(s.id) !== -1; })
       .sort(function (a, c) { return a.categoria.localeCompare(c.categoria) || a.ordine - c.ordine; });
 
     apriModale(
@@ -86,7 +88,8 @@
           return '<label style="display:flex;gap:9px;align-items:center;padding:5px 2px;cursor:pointer">' +
             '<input type="checkbox" name="svc" value="' + s.id + '"' +
             (sel.indexOf(s.id) !== -1 ? ' checked' : '') + ' style="width:18px;height:18px;margin:0">' +
-            '<span>' + esc(s.nome) + ' <span class="muted">· ' + E.durataLabel(s.durata) + ' · ' + E.euro(s.prezzo) + '</span></span></label>';
+            '<span>' + esc(s.nome) + ' <span class="muted">· ' + E.durataLabel(s.durata) + ' · ' + E.euro(s.prezzo) +
+            (s.attivo ? '' : ' · fuori listino') + '</span></span></label>';
         }).join('') +
       '</div>' +
       '<div class="row-between" style="margin-bottom:12px"><span class="muted">Totale</span><span class="totale" data-tot>—</span></div>' +

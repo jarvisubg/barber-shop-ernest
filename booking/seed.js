@@ -55,7 +55,11 @@
 
   var SETTINGS = {
     slotGranularita: 15,
-    buffer: 5,
+    /* Buffer 0 = appuntamenti attaccati, com'è la giornata reale in negozio.
+       Attenzione se lo si alza: il buffer vale su entrambi i lati e viene
+       arrotondato alla griglia, quindi un solo minuto di buffer con griglia 15
+       costa uno slot pieno prima e uno dopo ogni appuntamento. */
+    buffer: 0,
     finestraCancellazioneOre: 2,
     anticipoMinimoMinuti: 60,
     giorniAvanti: 30,

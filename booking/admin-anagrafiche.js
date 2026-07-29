@@ -331,13 +331,19 @@
 
   /* -------------------------------------------------------- impostazioni */
 
+  /* [chiave, etichetta, aiuto, minimo]. Il minimo è per campo: buffer e anticipo
+     devono poter valere 0 (appuntamenti attaccati, prenotazione dell'ultimo
+     minuto), gli altri no. */
   var CAMPI = [
-    ['slotGranularita', 'Griglia slot (minuti)', 'Ogni quanto parte un appuntamento'],
-    ['buffer', 'Buffer fra appuntamenti (minuti)', 'Pausa minima obbligatoria fra un cliente e il successivo'],
-    ['finestraCancellazioneOre', 'Finestra di disdetta (ore)', 'Sotto questa soglia il cliente deve chiamare'],
-    ['anticipoMinimoMinuti', 'Anticipo minimo (minuti)', 'Quanto prima si può prenotare rispetto ad adesso'],
-    ['giorniAvanti', 'Giorni prenotabili in avanti', ''],
-    ['maxPrenotazioniAttive', 'Max prenotazioni attive per numero', 'Argine alle prenotazioni civetta']
+    ['slotGranularita', 'Griglia slot (minuti)', 'Ogni quanto parte un appuntamento', 5],
+    ['buffer', 'Buffer fra appuntamenti (minuti)', 'Pausa fra un cliente e il successivo. ' +
+      'Vale su entrambi i lati e viene arrotondata alla griglia: con griglia 15, ' +
+      'anche 5 minuti di buffer bruciano uno slot pieno prima e uno dopo. Lascia 0 ' +
+      'per appuntamenti attaccati.', 0],
+    ['finestraCancellazioneOre', 'Finestra di disdetta (ore)', 'Sotto questa soglia il cliente deve chiamare', 0],
+    ['anticipoMinimoMinuti', 'Anticipo minimo (minuti)', 'Quanto prima si può prenotare rispetto ad adesso', 0],
+    ['giorniAvanti', 'Giorni prenotabili in avanti', '', 1],
+    ['maxPrenotazioniAttive', 'Max prenotazioni attive per numero', 'Argine alle prenotazioni civetta', 1]
   ];
 
   function renderImpostazioni() {
@@ -345,7 +351,7 @@
       '<div class="cal-head"><span class="cal-title">Impostazioni</span></div>' +
       '<div class="card">' + CAMPI.map(function (c) {
         return '<label class="f"><span>' + c[1] + '</span>' +
-          '<input type="number" name="' + c[0] + '" value="' + E.db.settings[c[0]] + '" min="1">' +
+          '<input type="number" name="' + c[0] + '" value="' + E.db.settings[c[0]] + '" min="' + c[3] + '">' +
           (c[2] ? '<span class="muted" style="font-size:.8rem;letter-spacing:0;text-transform:none">' + c[2] + '</span>' : '') +
           '</label>';
       }).join('') +
@@ -360,8 +366,10 @@
     var box = $('#tab-impostazioni');
     box.querySelector('[data-salva]').addEventListener('click', function () {
       CAMPI.forEach(function (c) {
-        var v = Number(box.querySelector('[name=' + c[0] + ']').value);
-        if (v > 0) E.db.settings[c[0]] = v;
+        var campo = box.querySelector('[name=' + c[0] + ']');
+        if (campo.value === '') return;              // campo svuotato: si tiene il valore attuale
+        var v = Number(campo.value);
+        if (isFinite(v) && v >= c[3]) E.db.settings[c[0]] = v;
       });
       E.db.settings.telefonoLabel = box.querySelector('[name=telefonoLabel]').value;
       E.save();

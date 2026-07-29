@@ -67,7 +67,27 @@
       });
       ok('giorno di riposo rispettato', !riposo.ok);
 
-      // 8 — buffer rispettato fra due appuntamenti
+      /* 8 — il difetto segnalato dal negozio: un appuntamento non deve togliere
+         slot oltre la propria durata. Trenta minuti dalle 16:00 devono bruciare
+         due soli slot da 15; le 15:30 e le 16:30 restano prenotabili.
+         Matteo (b2) alle 16 è ancora libero da tutti i test precedenti. */
+      var mezzora = E.creaPrenotazione({
+        serviziIds: ['cap-base'], nome: 'Test', cognome: 'Otto', telefono: '3331112228',
+        barberId: 'b2', inizio: key + 'T16:00', consenso: true
+      });
+      var liberi = E.slotsFor(key, 'b2', 30, { ignoraAnticipo: true }).map(function (x) { return x.ora; });
+      ok('30 min occupano 30 min, non di più', mezzora.ok &&
+        liberi.indexOf('15:30') !== -1 && liberi.indexOf('16:30') !== -1 &&
+        liberi.indexOf('16:00') === -1 && liberi.indexOf('16:15') === -1);
+
+      // 8b — il buffer resta disponibile: se il negozio lo alza, torna a valere
+      db.settings.buffer = 15;
+      var conBuffer = E.slotsFor(key, 'b2', 30, { ignoraAnticipo: true }).map(function (x) { return x.ora; });
+      db.settings.buffer = 0;
+      ok('buffer, se impostato, viene applicato',
+        conBuffer.indexOf('15:30') === -1 && conBuffer.indexOf('16:30') === -1);
+
+      // 8c — due appuntamenti consecutivi, senza buco fra l'uno e l'altro
       var c1 = E.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Quattro', telefono: '3331112225',
         barberId: 'b2', inizio: key + 'T14:00', consenso: true
@@ -76,7 +96,32 @@
         serviziIds: ['barba-normale'], nome: 'Test', cognome: 'Cinque', telefono: '3331112226',
         barberId: 'b2', inizio: key + 'T14:30', consenso: true
       });
-      ok('buffer di 5 min applicato', c1.ok && !c2.ok);
+      ok('appuntamenti consecutivi accettati', c1.ok && c2.ok);
+
+      // 8d — un servizio tolto dal listino non deve bloccare la modifica di una
+      //      prenotazione già presa con quel servizio
+      E.byId(db.services, 'cap-base').attivo = false;
+      var spostata = E.aggiornaPrenotazione(c1.booking.id, { note: 'spostato al banco' });
+      var nuova = E.creaPrenotazione({
+        serviziIds: ['cap-base'], nome: 'Test', cognome: 'Nove', telefono: '3331112229',
+        barberId: 'b2', inizio: key + 'T18:00', consenso: true
+      });
+      E.byId(db.services, 'cap-base').attivo = true;
+      ok('servizio fuori listino: modificabile ma non più prenotabile',
+        spostata.ok && spostata.booking.durata === 30 && !nuova.ok);
+
+      // 8e — una modifica rifiutata non deve lasciare il record mezzo scritto
+      var primaNome = c2.booking.nome;
+      var ko = E.aggiornaPrenotazione(c2.booking.id, { nome: 'SPORCO', telefono: 'non-un-numero' });
+      ok('modifica rifiutata non sporca il record', !ko.ok && c2.booking.nome === primaNome);
+
+      // 8f — l'orizzonte di prenotazione online è quello impostato, non infinito
+      var oltre = E.creaPrenotazione({
+        serviziIds: ['cap-base'], nome: 'Test', cognome: 'Dieci', telefono: '3331112230',
+        barberId: 'b1', inizio: E.dayKey(E.addDays(new Date(), db.settings.giorniAvanti + 10)) + 'T14:00',
+        consenso: true
+      });
+      ok('oltre i giorni prenotabili rifiutato', !oltre.ok);
 
       // 9 — cancellazione oltre finestra libera lo slot
       var prima = E.slotsFor(key, 'b1', 40, { ignoraAnticipo: true }).length;

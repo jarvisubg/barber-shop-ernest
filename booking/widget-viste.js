@@ -109,7 +109,10 @@
         var durata = durataTotale();
         var oggi = new Date();
         var giorni = [];
-        for (var i = 0; i < 14; i++) {
+        // l'orizzonte è quello impostato nel gestionale, non un numero fisso:
+        // altrimenti il motore rifiuta date che la striscia mostra come libere
+        var orizzonte = E.db.settings.giorniAvanti;
+        for (var i = 0; i <= orizzonte; i++) {
           var d = E.addDays(oggi, i);
           var key = E.dayKey(d);
           var liberi = E.slotsFor(key, S.barberId === null ? null : S.barberId, durata);
