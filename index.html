@@ -93,8 +93,10 @@
     .skip-link:focus-visible { top: 14px; }
 
     .site-header {
-      position: fixed;
-      inset: 0 0 auto;
+      /* sticky e non fixed: su iOS Safari la barra fixed resta indietro
+         durante lo scroll con inerzia e il contenuto le passa sopra */
+      position: sticky;
+      top: 0;
       z-index: 4;
       height: var(--header-h);
       border-bottom: 1px solid rgba(241, 242, 240, .16);
@@ -149,7 +151,8 @@
 
     .hero {
       position: relative;
-      min-height: 100dvh;
+      /* la barra sticky occupa spazio nel flusso: va scalata dall'altezza */
+      min-height: calc(100dvh - var(--header-h));
       overflow: hidden;
       isolation: isolate;
       border-bottom: 1px solid var(--line);
@@ -170,10 +173,10 @@
     }
 
     .hero-grid {
-      min-height: 100dvh;
+      min-height: calc(100dvh - var(--header-h));
       display: grid;
       align-items: end;
-      padding-block: calc(var(--header-h) + 40px) 38px;
+      padding-block: 40px 38px;
     }
 
     .hero-copy { max-width: 700px; }
@@ -412,7 +415,7 @@
     @media (min-width: 980px) {
       .hero-media { left: 46%; }
       .hero-media::after { background: linear-gradient(90deg, var(--ink) 0%, rgba(9, 10, 11, .86) 5%, rgba(9, 10, 11, .05) 42%, rgba(9, 10, 11, .08) 100%); }
-      .hero-grid { align-items: center; padding-block: calc(var(--header-h) + 24px) 24px; }
+      .hero-grid { align-items: center; padding-block: 24px; }
       .hero-copy { width: 48%; }
       .hero-logo { display: block; width: 150px; height: auto; margin: 0 0 20px; }
       .hero h1 { font-size: clamp(3.7rem, 5.2vw, 5.2rem); }
