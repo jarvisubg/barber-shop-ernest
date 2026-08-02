@@ -60,10 +60,12 @@
       ok('durata/prezzo ricalcolati', m.ok && m.booking.durata === 40 && m.booking.prezzo === 22);
 
       // 7b — prenotare un barbiere nel suo giorno di riposo viene rifiutato
-      //      (Kevin non lavora il martedì)
+      //      (Matteo non lavora il lunedì)
+      var lunedi = E.addDays(new Date(), 1);
+      while (E.weekday(lunedi) !== 1) lunedi = E.addDays(lunedi, 1);
       var riposo = E.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Sei', telefono: '3331112227',
-        barberId: 'b3', inizio: key + 'T14:00', consenso: true
+        barberId: 'b2', inizio: E.dayKey(lunedi) + 'T14:00', consenso: true
       });
       ok('giorno di riposo rispettato', !riposo.ok);
 

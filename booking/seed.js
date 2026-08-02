@@ -23,12 +23,9 @@
     { id: 'extra-cera', nome: 'Cera Calda', descrizione: 'Pulizia viso + naso a cera', categoria: 'extra', durata: 10, prezzo: 7, ordine: 3, attivo: true }
   ];
 
-  /* Nomi barbieri: placeholder da confermare con il negozio («DA FORNIRE»).
-     Gli orari invece sono quelli reali dell'insegna e non vanno superati. */
   var BARBIERI = [
-    { id: 'b1', nome: 'Ernest', specialita: 'Fade e barba tradizionale', colore: '#c9cdd0', ordine: 1, attivo: true },
-    { id: 'b2', nome: 'Matteo', specialita: 'Tagli classici e rasatura a rasoio', colore: '#8fa3b0', ordine: 2, attivo: true },
-    { id: 'b3', nome: 'Kevin', specialita: 'Tagli moderni e styling', colore: '#b3a58f', ordine: 3, attivo: true }
+    { id: 'b1', nome: 'Ernest', specialita: 'Fade e barba tradizionale', colore: '#c9cdd0', foto: 'images/barber-ernest/barbieri/ernest.webp', ordine: 1, attivo: true },
+    { id: 'b2', nome: 'Matteo', specialita: 'Tagli classici e rasatura a rasoio', colore: '#8fa3b0', foto: 'images/barber-ernest/barbieri/matteo.webp', ordine: 2, attivo: true }
   ];
 
   /* Orari negozio: Lun 14-21 · Mar-Ven 10-12 e 13:30-21 · Sab 9-12 e 13:30-20 · Dom chiuso.
@@ -46,10 +43,6 @@
     // Matteo — riposa domenica e lunedì, entra solo il pomeriggio infrasettimanale
     [2, 3, 4, 5].forEach(function (g) { add('b2', g, '13:30', '21:00'); });
     add('b2', 6, '09:00', '12:00'); add('b2', 6, '13:30', '20:00');
-    // Kevin — riposa domenica e martedì
-    add('b3', 1, '14:00', '21:00');
-    [3, 4, 5].forEach(function (g) { add('b3', g, '10:00', '12:00'); add('b3', g, '13:30', '21:00'); });
-    add('b3', 6, '09:00', '12:00'); add('b3', 6, '13:30', '20:00');
     return out;
   }
 

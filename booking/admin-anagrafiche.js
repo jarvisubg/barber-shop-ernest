@@ -29,8 +29,12 @@
         var ferie = E.db.timeOff.filter(function (t) { return t.barberId === b.id; });
         var future = E.prenotazioniFuture(b.id).length;
 
+        var foto = b.foto
+          ? '<img src="' + esc(b.foto) + '" alt="" width="34" height="34" style="width:34px;height:34px;object-fit:cover;vertical-align:middle;margin-right:8px">'
+          : '<span class="dot" style="display:inline-block;background:' + esc(b.colore) + '"></span> ';
+
         return '<div class="card">' +
-          '<div class="row-between"><h3><span class="dot" style="display:inline-block;background:' + esc(b.colore) + '"></span> ' +
+          '<div class="row-between"><h3>' + foto +
             esc(b.nome) + (b.attivo ? '' : ' <span class="pill">non attivo</span>') + '</h3>' +
           '<div class="stack">' +
             '<button class="btn btn-sm" data-edit="' + b.id + '">Modifica</button>' +
@@ -73,11 +77,12 @@
   }
 
   function formBarbiere(id) {
-    var b = id ? barbiere(id) : { nome: '', specialita: '', colore: '#c9cdd0', ordine: E.db.barbers.length + 1, attivo: true };
+    var b = id ? barbiere(id) : { nome: '', specialita: '', colore: '#c9cdd0', foto: '', ordine: E.db.barbers.length + 1, attivo: true };
     apriModale(
       '<h2>' + (id ? 'Modifica barbiere' : 'Nuovo barbiere') + '</h2>' +
       '<label class="f"><span>Nome</span><input type="text" name="nome" value="' + esc(b.nome) + '"></label>' +
       '<label class="f"><span>Specialità</span><input type="text" name="spec" value="' + esc(b.specialita || '') + '"></label>' +
+      '<label class="f"><span>Foto (percorso o URL)</span><input type="text" name="foto" placeholder="images/barber-ernest/barbieri/nome.webp" value="' + esc(b.foto || '') + '"></label>' +
       '<div class="grid2">' +
         '<label class="f"><span>Colore calendario</span><input type="color" name="colore" value="' + esc(b.colore) + '" style="height:40px;padding:3px"></label>' +
         '<label class="f"><span>Ordine</span><input type="number" name="ordine" value="' + b.ordine + '" min="1"></label>' +
@@ -93,6 +98,7 @@
             id: id || undefined,
             nome: box.querySelector('[name=nome]').value.trim() || 'Senza nome',
             specialita: box.querySelector('[name=spec]').value.trim(),
+            foto: box.querySelector('[name=foto]').value.trim(),
             colore: box.querySelector('[name=colore]').value,
             ordine: Number(box.querySelector('[name=ordine]').value) || 1,
             attivo: box.querySelector('[name=attivo]').checked

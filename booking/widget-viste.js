@@ -92,9 +92,12 @@
           '<span class="bk-mark">' + (S.barberId === null ? '✓' : '') + '</span></button>';
 
         var lista = barbieri.map(function (b) {
+          var avatar = b.foto
+            ? '<span class="bk-avatar"><img src="' + esc(b.foto) + '" alt="" width="64" height="64" loading="lazy"></span>'
+            : '<span class="bk-avatar" style="background:' + esc(b.colore) + '">' + esc(b.nome.charAt(0)) + '</span>';
           return '<button class="bk-choice bk-choice-with-avatar" type="button" data-act="barbiere" data-id="' + b.id + '"' +
             ' aria-pressed="' + (S.barberId === b.id) + '" data-selected="' + (S.barberId === b.id) + '">' +
-            '<span class="bk-avatar" style="background:' + esc(b.colore) + '">' + esc(b.nome.charAt(0)) + '</span>' +
+            avatar +
             '<span><span class="bk-choice-name">' + esc(b.nome) + '</span>' +
             '<span class="bk-choice-desc">' + esc(b.specialita || '') + '</span></span>' +
             '<span class="bk-mark">' + (S.barberId === b.id ? '✓' : '') + '</span></button>';
