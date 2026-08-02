@@ -98,8 +98,9 @@
       z-index: 4;
       height: var(--header-h);
       border-bottom: 1px solid rgba(241, 242, 240, .16);
-      background: rgba(9, 10, 11, .88);
-      backdrop-filter: blur(16px);
+      /* opaco: su iOS Safari backdrop-filter senza prefisso non si applica
+         e lo sfondo traspariva attraverso la barra */
+      background: var(--ink);
     }
 
     .nav {
