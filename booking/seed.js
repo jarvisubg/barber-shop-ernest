@@ -25,7 +25,7 @@
 
   var BARBIERI = [
     { id: 'b1', nome: 'Ernest', specialita: 'Fade e barba tradizionale', colore: '#c9cdd0', foto: 'images/barber-ernest/barbieri/ernest.webp', ordine: 1, attivo: true },
-    { id: 'b2', nome: 'Matteo', specialita: 'Tagli classici e rasatura a rasoio', colore: '#8fa3b0', foto: 'images/barber-ernest/barbieri/matteo.webp', ordine: 2, attivo: true }
+    { id: 'b2', nome: 'Mario', specialita: 'Tagli classici e rasatura a rasoio', colore: '#8fa3b0', foto: 'images/barber-ernest/barbieri/mario.webp', ordine: 2, attivo: true }
   ];
 
   /* Orari negozio: Lun 14-21 · Mar-Ven 10-12 e 13:30-21 · Sab 9-12 e 13:30-20 · Dom chiuso.
@@ -40,7 +40,7 @@
     add('b1', 1, '14:00', '21:00');
     [2, 3, 4, 5].forEach(function (g) { add('b1', g, '10:00', '12:00'); add('b1', g, '13:30', '21:00'); });
     add('b1', 6, '09:00', '12:00'); add('b1', 6, '13:30', '20:00');
-    // Matteo — riposa domenica e lunedì, entra solo il pomeriggio infrasettimanale
+    // Mario — riposa domenica e lunedì, entra solo il pomeriggio infrasettimanale
     [2, 3, 4, 5].forEach(function (g) { add('b2', g, '13:30', '21:00'); });
     add('b2', 6, '09:00', '12:00'); add('b2', 6, '13:30', '20:00');
     return out;
@@ -86,7 +86,7 @@
     db.timeOff = db.timeOff.filter(function (t) { return !t.seed; });
     db.closures = db.closures.filter(function (c) { return !c.seed; });
 
-    // Mezza giornata di permesso: Matteo, fra 3 giorni dalle 17 in poi
+    // Mezza giornata di permesso: Mario, fra 3 giorni dalle 17 in poi
     var perm = T.addDays(oggi, 3);
     db.timeOff.push({
       id: T.uid(), barberId: 'b2', seed: true,

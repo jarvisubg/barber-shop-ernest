@@ -93,7 +93,7 @@
 
         var lista = barbieri.map(function (b) {
           var avatar = b.foto
-            ? '<span class="bk-avatar"><img src="' + esc(b.foto) + '" alt="" width="64" height="64" loading="lazy"></span>'
+            ? '<span class="bk-avatar"><img src="' + esc(b.foto) + '" alt="" width="84" height="84" loading="lazy"></span>'
             : '<span class="bk-avatar" style="background:' + esc(b.colore) + '">' + esc(b.nome.charAt(0)) + '</span>';
           return '<button class="bk-choice bk-choice-with-avatar" type="button" data-act="barbiere" data-id="' + b.id + '"' +
             ' aria-pressed="' + (S.barberId === b.id) + '" data-selected="' + (S.barberId === b.id) + '">' +

@@ -60,7 +60,7 @@
       ok('durata/prezzo ricalcolati', m.ok && m.booking.durata === 40 && m.booking.prezzo === 22);
 
       // 7b — prenotare un barbiere nel suo giorno di riposo viene rifiutato
-      //      (Matteo non lavora il lunedì)
+      //      (Mario non lavora il lunedì)
       var lunedi = E.addDays(new Date(), 1);
       while (E.weekday(lunedi) !== 1) lunedi = E.addDays(lunedi, 1);
       var riposo = E.creaPrenotazione({
@@ -72,7 +72,7 @@
       /* 8 — il difetto segnalato dal negozio: un appuntamento non deve togliere
          slot oltre la propria durata. Trenta minuti dalle 16:00 devono bruciare
          due soli slot da 15; le 15:30 e le 16:30 restano prenotabili.
-         Matteo (b2) alle 16 è ancora libero da tutti i test precedenti. */
+         Mario (b2) alle 16 è ancora libero da tutti i test precedenti. */
       var mezzora = E.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Otto', telefono: '3331112228',
         barberId: 'b2', inizio: key + 'T16:00', consenso: true

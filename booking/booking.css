@@ -205,11 +205,11 @@ body.bk-locked { overflow: hidden; }
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  width: 56px;
-  height: 56px;
+  width: 84px;
+  height: 84px;
   flex: 0 0 auto;
   border: 1px solid var(--bk-line-strong);
-  font: 800 1.15rem/1 var(--bk-display);
+  font: 800 1.6rem/1 var(--bk-display);
   color: var(--bk-ink);
 }
 

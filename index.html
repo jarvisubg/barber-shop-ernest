@@ -212,6 +212,26 @@
 
     .service:hover .service-mark { color: var(--paper); transform: translate(4px, -4px); }
 
+    .team-grid { display: grid; gap: 40px; margin-top: 48px; }
+
+    .team-photo {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--ink-raised);
+    }
+
+    .team-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 20%;
+      filter: contrast(1.03) saturate(.86);
+    }
+
+    .team-card h3 { margin: 20px 0 0; font-size: clamp(1.9rem, 8vw, 2.6rem); }
+
     .shop-story { overflow: clip; }
     .shop-story .section-intro { max-width: 32rem; }
     .shop-photo {
@@ -371,6 +391,7 @@
       .service { grid-template-columns: minmax(260px, .9fr) 1.1fr auto; align-items: center; min-height: 154px; }
       .service:nth-child(2) { padding-left: 8vw; }
       .service:nth-child(3) { padding-left: 3vw; }
+      .team-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; margin-top: 56px; }
       .facts { grid-template-columns: repeat(3, 1fr); }
       .footer-grid { grid-template-columns: auto 1fr; align-items: end; }
       footer p { justify-self: end; text-align: right; }
@@ -435,9 +456,10 @@
         <img class="brand-logo--compact" src="images/barber-ernest/logo-compact.svg" width="1000" height="200" alt="">
       </a>
       <div class="nav-links">
-        <a href="#servizi">Servizi</a>
         <a href="#lavori">Lavori</a>
+        <a href="#barbieri">Barbieri</a>
         <a href="#negozio" aria-current="true">Il negozio</a>
+        <a href="#servizi">Servizi</a>
         <a href="#informazioni">Informazioni</a>
       </div>
       <a class="button" href="#prenota" data-booking-trigger="">Prenota ora</a>
@@ -458,30 +480,6 @@
             <a class="button" href="#prenota" data-booking-trigger="">Prenota ora</a>
             <a class="button button-ghost" href="#servizi">Scopri i servizi</a>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="servizi" aria-labelledby="servizi-title">
-      <div class="shell">
-        <h2 class="display" id="servizi-title">Il tuo stile, curato bene.</h2>
-        <p class="section-intro">Servizi essenziali per mantenere il tuo look ordinato, definito e personale.</p>
-        <div class="services">
-          <article class="service">
-            <h3 class="display">Taglio uomo</h3>
-            <p>Un taglio costruito sulla forma del viso e sullo stile che vuoi portare.</p>
-            <span class="service-mark" aria-hidden="true">↗</span>
-          </article>
-          <article class="service">
-            <h3 class="display">Cura della barba</h3>
-            <p>Definizione, ordine e attenzione ai dettagli per una barba sempre curata.</p>
-            <span class="service-mark" aria-hidden="true">↗</span>
-          </article>
-          <article class="service">
-            <h3 class="display">Taglio e barba</h3>
-            <p>Un servizio completo per un risultato coerente, pulito e personale.</p>
-            <span class="service-mark" aria-hidden="true">↗</span>
-          </article>
         </div>
       </div>
     </section>
@@ -526,6 +524,27 @@
       </div>
     </section>
 
+    <section class="section" id="barbieri" aria-labelledby="barbieri-title">
+      <div class="shell">
+        <h2 class="display" id="barbieri-title">Chi ti taglia.</h2>
+        <p class="section-intro">Due persone, due modi di lavorare. Scegli il tuo in fase di prenotazione.</p>
+        <div class="team-grid">
+          <article class="team-card">
+            <div class="team-photo">
+              <img src="images/barber-ernest/barbieri/ernest-team.webp" width="1280" height="1600" loading="lazy" alt="Ernest, barbiere di Barber Shop Ernest">
+            </div>
+            <h3 class="display">Ernest</h3>
+          </article>
+          <article class="team-card">
+            <div class="team-photo">
+              <img src="images/barber-ernest/barbieri/mario-team.webp" width="1280" height="1600" loading="lazy" alt="Mario, barbiere di Barber Shop Ernest">
+            </div>
+            <h3 class="display">Mario</h3>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="section shop-story" id="negozio" aria-labelledby="negozio-title">
       <div class="shell">
         <h2 class="display" id="negozio-title">Un ambiente che parla il tuo stile.</h2>
@@ -536,6 +555,30 @@
             <img src="images/barber-ernest/shop-section-mobile-hq.webp" width="814" height="1086" loading="lazy" alt="Interno del Barber Shop Ernest con poltrone nere, pavimento effetto marmo e soffitto a LED geometrici">
           </picture>
         </figure>
+      </div>
+    </section>
+
+    <section class="section" id="servizi" aria-labelledby="servizi-title">
+      <div class="shell">
+        <h2 class="display" id="servizi-title">Il tuo stile, curato bene.</h2>
+        <p class="section-intro">Servizi essenziali per mantenere il tuo look ordinato, definito e personale.</p>
+        <div class="services">
+          <article class="service">
+            <h3 class="display">Taglio uomo</h3>
+            <p>Un taglio costruito sulla forma del viso e sullo stile che vuoi portare.</p>
+            <span class="service-mark" aria-hidden="true">↗</span>
+          </article>
+          <article class="service">
+            <h3 class="display">Cura della barba</h3>
+            <p>Definizione, ordine e attenzione ai dettagli per una barba sempre curata.</p>
+            <span class="service-mark" aria-hidden="true">↗</span>
+          </article>
+          <article class="service">
+            <h3 class="display">Taglio e barba</h3>
+            <p>Un servizio completo per un risultato coerente, pulito e personale.</p>
+            <span class="service-mark" aria-hidden="true">↗</span>
+          </article>
+        </div>
       </div>
     </section>
 
