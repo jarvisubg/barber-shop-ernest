@@ -7,7 +7,7 @@
 (function (global, T, SEED) {
   'use strict';
 
-  var STORE_KEY = 'ernest-booking-v1';
+  var STORE_KEY = 'ernest-booking-v2';
 
   /* helper di data/ora e formato: vivono in tempo.js */
   var pad = T.pad, dayKey = T.dayKey, toMin = T.toMin, toHHMM = T.toHHMM, at = T.at,
