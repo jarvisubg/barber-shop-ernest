@@ -183,9 +183,19 @@
     .hero p { max-width: 34rem; margin: 24px 0 0; color: #e1e3e2; font-size: 1.02rem; }
     .hero-actions { display: grid; gap: 10px; margin-top: 28px; }
 
-    @media (max-width: 479px) {
-      .brand-link { width: 160px; }
-      .nav > .button { padding-inline: 14px; font-size: .7rem; }
+    /* mobile: logo e bottone si contendevano i 280-350px della barra e a 320px
+       sbordavano; qui la barra è più bassa e i due elementi più compatti */
+    @media (max-width: 719px) {
+      :root { --header-h: 58px; }
+      .brand-link { width: clamp(112px, 33vw, 132px); }
+      .site-header .button {
+        min-height: 44px; /* soglia touch target, non scendere sotto */
+        padding-inline: 13px;
+        gap: 7px;
+        font-size: .68rem;
+        letter-spacing: .06em;
+      }
+      .site-header .button::after { font-size: .9rem; }
     }
 
     .section { padding-block: 88px; border-bottom: 1px solid var(--line); }
