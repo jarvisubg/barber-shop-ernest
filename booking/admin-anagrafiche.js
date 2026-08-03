@@ -14,6 +14,13 @@
 
   /* ------------------------------------------------------------ barbieri */
 
+  /* Le foto sono registrate col percorso che serve al sito, che sta nella
+     radice; il gestionale sta in /booking/, quindi da qui vanno risalite di un
+     livello. Senza questo le schede barbiere mostrano immagini rotte. */
+  function fotoUrl(p) {
+    return /^(https?:|\/|\.\.\/|data:)/.test(p) ? p : '../' + p;
+  }
+
   function renderBarbieri() {
     $('#tab-barbieri').innerHTML =
       '<div class="cal-head"><span class="cal-title">Barbieri</span>' +
@@ -30,7 +37,7 @@
         var future = E.prenotazioniFuture(b.id).length;
 
         var foto = b.foto
-          ? '<img src="' + esc(b.foto) + '" alt="" width="34" height="34" style="width:34px;height:34px;object-fit:cover;vertical-align:middle;margin-right:8px">'
+          ? '<img src="' + esc(fotoUrl(b.foto)) + '" alt="" width="34" height="34" style="width:34px;height:34px;object-fit:cover;vertical-align:middle;margin-right:8px">'
           : '<span class="dot" style="display:inline-block;background:' + esc(b.colore) + '"></span> ';
 
         return '<div class="card">' +

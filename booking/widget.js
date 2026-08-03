@@ -139,6 +139,9 @@
   function onClick(ev) {
     var b = ev.target.closest('[data-act]');
     if (!b) return;
+    // il riquadro esiste nel DOM anche da chiuso: senza uno stato non c'è
+    // niente da comandare, e leggerlo lancerebbe un errore
+    if (!S) return;
     var act = b.dataset.act;
 
     if (act === 'chiudi') return chiudi();
