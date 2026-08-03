@@ -176,6 +176,31 @@
     return out;
   }
 
+  /* Il calendario si apre su oggi, ma una prenotazione presa adesso dal sito
+     cade quasi sempre domani o più in là: c'è l'anticipo minimo, quindi il
+     primo orario libero è raramente oggi. Chi guardava solo la schermata di
+     apertura credeva che la prenotazione non fosse arrivata. Questo avviso dice
+     dov'è e ci porta con un clic. */
+  function avvisoProssimi() {
+    function quante(key) {
+      return E.prenotazioniDel(key).filter(function (b) {
+        return b.stato !== 'cancellata' && (!V.filtro || b.barberId === V.filtro);
+      }).length;
+    }
+    if (quante(V.dataKey)) return '';
+
+    var oggi = E.at(V.dataKey, 0);
+    for (var i = 1; i <= E.db.settings.giorniAvanti; i++) {
+      var g = E.addDays(oggi, i), key = E.dayKey(g), n = quante(key);
+      if (!n) continue;
+      return '<div class="card" style="margin-bottom:14px">' +
+        'Nessun appuntamento in questa giornata. Il prossimo è <strong>' +
+        esc(E.labelData(g)) + '</strong> — ' + n + (n === 1 ? ' appuntamento' : ' appuntamenti') +
+        '. <button class="btn btn-sm" data-vai="' + key + '">Vai a quel giorno</button></div>';
+    }
+    return '';
+  }
+
   function renderCalendario() {
     var box = $('#tab-calendario');
     var d = E.at(V.dataKey, 0);
@@ -206,7 +231,8 @@
         '</div>' +
       '</div>';
 
-    box.innerHTML = testa + (V.vista === 'giorno' ? vistaGiorno() : vistaSettimana());
+    box.innerHTML = testa +
+      (V.vista === 'giorno' ? avvisoProssimi() + vistaGiorno() : vistaSettimana());
     collegaCalendario(box);
   }
 
@@ -290,6 +316,9 @@
         render();
       });
     });
+    box.querySelectorAll('[data-vai]').forEach(function (b) {
+      b.addEventListener('click', function () { V.dataKey = b.dataset.vai; render(); });
+    });
     var sel = box.querySelector('[data-filtro]');
     if (sel) sel.addEventListener('change', function () { V.filtro = sel.value; render(); });
     box.querySelectorAll('[data-vista]').forEach(function (b) {
@@ -334,6 +363,7 @@
         '<div><span class="muted" style="font-size:.7rem;letter-spacing:.14em;text-transform:uppercase">Previsto</span>' +
         '<div class="totale">' + E.euro(incasso) + '</div></div>' +
       '</div>' +
+      avvisoProssimi() +
       (pren.length
         ? '<table><thead><tr><th>Ora</th><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Tot.</th><th>Stato</th><th></th></tr></thead><tbody>' +
           pren.map(function (b) {
