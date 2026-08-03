@@ -4,6 +4,12 @@
 (function (global, T) {
   'use strict';
 
+  /* Si alza di uno ogni volta che cambiano prezzi o durate qui sotto. Il motore
+     la usa per aggiornare il listino sui browser che hanno già i dati salvati,
+     senza toccare le prenotazioni già prese.
+     2 = 2026-08-03, "Capelli + Barba" 45 min e "+ Shampoo" 50 min. */
+  var LISTINO_VERSIONE = 2;
+
   /* Prezzi e durate reali del negozio. prezzoPieno esiste solo sui combo e
      serve a calcolare il risparmio mostrato in UI: non va mai hardcodato.
 
@@ -21,8 +27,8 @@
     { id: 'barba-lunga', nome: 'Barba Lunga', descrizione: 'Panno caldo + panno freddo + shampoo di barba', categoria: 'barba', durata: 30, prezzo: 15, ordine: 2, evidenza: 8, attivo: true },
     { id: 'barba-full', nome: 'Rasatura Full', descrizione: 'Rasatura completa a rasoio', categoria: 'barba', durata: 20, prezzo: 10, ordine: 3, attivo: true },
 
-    { id: 'combo-base', nome: 'Capelli + Barba', descrizione: 'Taglio capelli e barba senza shampoo', categoria: 'combo', durata: 30, prezzo: 20, prezzoPieno: 25, ordine: 1, evidenza: 2, attivo: true },
-    { id: 'combo-shampoo', nome: 'Capelli + Barba + Shampoo', descrizione: 'Taglio capelli e barba, shampoo incluso', categoria: 'combo', durata: 45, prezzo: 25, prezzoPieno: 30, ordine: 2, evidenza: 4, attivo: true },
+    { id: 'combo-base', nome: 'Capelli + Barba', descrizione: 'Taglio capelli e barba senza shampoo', categoria: 'combo', durata: 45, prezzo: 20, prezzoPieno: 25, ordine: 1, evidenza: 2, attivo: true },
+    { id: 'combo-shampoo', nome: 'Capelli + Barba + Shampoo', descrizione: 'Taglio capelli e barba, shampoo incluso', categoria: 'combo', durata: 50, prezzo: 25, prezzoPieno: 30, ordine: 2, evidenza: 4, attivo: true },
     { id: 'combo-completo', nome: 'Capelli Lunghi + Barba Lunga', descrizione: 'Taglio capelli e barba lunga, shampoo incluso', categoria: 'combo', durata: 60, prezzo: 30, prezzoPieno: 35, ordine: 3, evidenza: 5, attivo: true },
 
     { id: 'extra-sopracciglia', nome: 'Sopracciglia', descrizione: 'Sistemazione sopracciglia', categoria: 'extra', durata: 5, prezzo: 5, ordine: 1, evidenza: 6, attivo: true },
@@ -143,6 +149,7 @@
 
   global.ErnestSeed = {
     SERVIZI: SERVIZI, BARBIERI: BARBIERI, SETTINGS: SETTINGS,
+    LISTINO_VERSIONE: LISTINO_VERSIONE,
     orari: orari, popola: popola
   };
 

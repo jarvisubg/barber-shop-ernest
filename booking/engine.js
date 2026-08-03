@@ -7,10 +7,6 @@
 (function (global, T, SEED) {
   'use strict';
 
-  /* Il listino vive dentro il database salvato, non viene riletto dal seed a
-     ogni avvio: chi ha già aperto il sito resterebbe sui vecchi prezzi per
-     sempre. Quando il listino cambia si alza la versione della chiave, così il
-     database riparte dal seed nuovo. */
   var STORE_KEY = 'ernest-booking-v3';
 
   /* helper di data/ora e formato: vivono in tempo.js */
@@ -414,6 +410,22 @@
       db.schema = 2;
       save();
     }
+    /* Il listino vive dentro il database salvato sul browser, non viene riletto
+       dal seed a ogni avvio: senza questo, chi ha già aperto il sito resterebbe
+       sui vecchi prezzi e sulle vecchie durate per sempre.
+       Si aggiornano solo le voci nostre, riconosciute per id: i servizi che il
+       negozio ha aggiunto dal gestionale non si toccano. Alzare invece la
+       versione della chiave qui sopra cancellerebbe anche le prenotazioni. */
+    if (db.listinoVersione !== SEED.LISTINO_VERSIONE) {
+      SEED.SERVIZI.forEach(function (s) {
+        var esistente = byId(db.services, s.id);
+        if (esistente) Object.keys(s).forEach(function (k) { esistente[k] = s[k]; });
+        else db.services.push(JSON.parse(JSON.stringify(s)));
+      });
+      db.listinoVersione = SEED.LISTINO_VERSIONE;
+      save();
+    }
+
     if (db.seedDay !== dayKey(new Date())) popolaDemo();
     return db;
   }
