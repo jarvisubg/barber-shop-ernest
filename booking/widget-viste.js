@@ -12,26 +12,36 @@
       function durataTotale() { return totali().durata; }
       function sync() { S = ctx.stato(); }
 
-      function vistaLunghezza() {
-          sync();
-        var opzioni = [
-          ['lunghi', 'Lunghi', 'Ti consiglio il taglio con shampoo'],
-          ['corti', 'Corti', 'Taglio base o rasatura a misura unica'],
-          ['solo_barba', 'Vengo solo per la barba', 'Salti direttamente ai servizi barba']
-        ];
-        return '<p class="bk-sub">Serve solo a proporti i servizi giusti. Puoi comunque sceglierli tutti.</p>' +
-          '<div class="bk-choices">' + opzioni.map(function (o) {
-            return '<button class="bk-choice" type="button" data-act="lunghezza" data-val="' + o[0] + '"' +
-              ' aria-pressed="' + (S.lunghezza === o[0]) + '" data-selected="' + (S.lunghezza === o[0]) + '">' +
-              '<span><span class="bk-choice-name">' + o[1] + '</span>' +
-              '<span class="bk-choice-desc">' + o[2] + '</span></span>' +
-              '<span class="bk-mark">' + (S.lunghezza === o[0] ? '✓' : '') + '</span></button>';
-          }).join('') + '</div>' +
-          '<button class="bk-link" type="button" data-act="gestisci">Ho già una prenotazione — gestiscila</button>';
+      /* ------------------------------------------------------------ servizi */
+
+      /* Le pill in cima al listino. "In evidenza" non è una categoria vera: è
+         la selezione che il negozio vuole far vedere per prima, presa dal campo
+         `evidenza` del listino e trasversale alle categorie. */
+      var CATEGORIE = [
+        ['evidenza', 'In evidenza'],
+        ['combo', 'Combo'],
+        ['capelli', 'Taglio capelli'],
+        ['barba', 'Barba'],
+        ['extra', 'Extra']
+      ];
+
+      function inCategoria(attivi, cat) {
+        if (cat === 'evidenza') {
+          /* A parità di posizione decide l'ordine di categoria e poi il nome:
+             il negozio può dare per sbaglio lo stesso numero a due servizi, e
+             senza questo la vetrina cambierebbe a seconda di com'è fatto il
+             database invece che di quello che ha scelto il negozio. */
+          return attivi.filter(function (s) { return s.evidenza; })
+            .sort(function (a, b) {
+              return a.evidenza - b.evidenza || a.ordine - b.ordine ||
+                a.nome.localeCompare(b.nome);
+            });
+        }
+        return attivi.filter(function (s) { return s.categoria === cat; })
+          .sort(function (a, b) { return a.ordine - b.ordine; });
       }
 
       function cardServizio(s) {
-          sync();
         var scelto = S.serviziIds.indexOf(s.id) !== -1;
         var comboScelto = S.serviziIds.some(function (x) {
           var o = E.byId(E.db.services, x);
@@ -45,50 +55,56 @@
         var risparmio = s.prezzoPieno && s.prezzoPieno > s.prezzo
           ? '<span class="bk-badge">Risparmi ' + E.euro(s.prezzoPieno - s.prezzo) + '</span>' : '';
 
-        return '<button class="bk-choice" type="button" data-act="servizio" data-id="' + s.id + '"' +
+        return '<button class="bk-card" type="button" data-act="servizio" data-id="' + s.id + '"' +
           ' aria-pressed="' + scelto + '" data-selected="' + scelto + '"' + (bloccato ? ' disabled' : '') + '>' +
-          '<span><span class="bk-choice-name">' + esc(s.nome) + '</span>' +
-          '<span class="bk-choice-desc">' + esc(s.descrizione || '') + '</span>' + risparmio + '</span>' +
-          '<span class="bk-choice-meta">' +
-            '<span class="bk-choice-price">' + E.euro(s.prezzo) + '</span>' +
-            '<span class="bk-choice-dur">' + E.durataLabel(s.durata) + '</span>' +
+          '<span class="bk-card-name">' + esc(s.nome) + '</span>' +
+          '<span class="bk-card-dur">' + E.durataLabel(s.durata) + '</span>' +
+          '<span class="bk-card-desc">' + esc(s.descrizione || '') + '</span>' +
+          '<span class="bk-card-foot">' +
+            '<span class="bk-card-prezzo">' + E.euro(s.prezzo) +
+              (s.prezzoPieno && s.prezzoPieno > s.prezzo
+                ? '<s>' + E.euro(s.prezzoPieno) + '</s>' : '') +
+            '</span>' +
+            risparmio +
+            '<span class="bk-card-add" aria-hidden="true">' + (scelto ? '✓' : '+') + '</span>' +
           '</span></button>';
       }
 
       function vistaServizi() {
-          sync();
-        var attivi = E.db.services.filter(function (s) { return s.attivo; })
-          .sort(function (a, b) { return a.ordine - b.ordine; });
+        sync();
+        var attivi = E.db.services.filter(function (s) { return s.attivo; });
 
-        function gruppo(cat) {
-          return attivi.filter(function (s) { return s.categoria === cat; }).map(cardServizio).join('');
+        // una pill che non ha servizi dietro è una via chiusa: non si mostra
+        var disponibili = CATEGORIE.filter(function (c) { return inCategoria(attivi, c[0]).length; });
+        if (!disponibili.some(function (c) { return c[0] === S.catAttiva; }) && disponibili.length) {
+          S.catAttiva = disponibili[0][0];
         }
 
-        // la lunghezza dichiarata decide solo l'ordine dei blocchi, non cosa è scegliibile
-        var blocchi = [
-          ['combo', 'Combo — taglio + barba'],
-          ['capelli', 'Capelli'],
-          ['barba', 'Barba'],
-          ['extra', 'Extra — da aggiungere']
-        ];
-        if (S.lunghezza === 'solo_barba') blocchi = [blocchi[2], blocchi[0], blocchi[1], blocchi[3]];
+        var pills = disponibili.map(function (c) {
+          return '<button class="bk-pill" type="button" data-act="categoria" data-cat="' + c[0] + '"' +
+            ' aria-pressed="' + (S.catAttiva === c[0]) + '">' + c[1] + '</button>';
+        }).join('');
 
-        return '<p class="bk-sub">Puoi combinare più servizi: durata e prezzo si sommano.</p>' +
-          blocchi.map(function (b) {
-            return '<h3 class="bk-group-title">' + b[1] + '</h3><div class="bk-choices">' + gruppo(b[0]) + '</div>';
-          }).join('');
+        var lista = inCategoria(attivi, S.catAttiva);
+        var titolo = (disponibili.filter(function (c) { return c[0] === S.catAttiva; })[0] || ['', ''])[1];
+
+        return '<div class="bk-pills">' + pills + '</div>' +
+          '<h3 class="bk-group-title">' + esc(titolo) + '</h3>' +
+          '<div class="bk-cards">' + lista.map(cardServizio).join('') + '</div>' +
+          '<button class="bk-link" type="button" data-act="gestisci">Ho già una prenotazione — gestiscila</button>';
       }
 
-      function vistaBarbiere() {
-          sync();
-        var t = totali();
+      /* ------------------------------------------------------ professionista */
+
+      function vistaProfessionista() {
+        sync();
         var barbieri = E.db.barbers.filter(function (b) { return b.attivo; })
           .sort(function (a, b) { return a.ordine - b.ordine; });
 
         var auto = '<button class="bk-choice" type="button" data-act="barbiere" data-id="auto"' +
           ' aria-pressed="' + (S.barberId === null) + '" data-selected="' + (S.barberId === null) + '">' +
           '<span><span class="bk-choice-name">Primo disponibile</span>' +
-          '<span class="bk-choice-desc">Ti assegniamo il barbiere libero prima</span></span>' +
+          '<span class="bk-choice-desc">Massima disponibilità: ti assegniamo il barbiere libero prima</span></span>' +
           '<span class="bk-mark">' + (S.barberId === null ? '✓' : '') + '</span></button>';
 
         var lista = barbieri.map(function (b) {
@@ -103,12 +119,13 @@
             '<span class="bk-mark">' + (S.barberId === b.id ? '✓' : '') + '</span></button>';
         }).join('');
 
-        return '<p class="bk-sub">Servizio da ' + E.durataLabel(t.durata) + '.</p>' +
-          '<div class="bk-choices">' + auto + lista + '</div>';
+        return '<div class="bk-choices">' + auto + lista + '</div>';
       }
 
-      function vistaQuando() {
-          sync();
+      /* ---------------------------------------------------------------- ora */
+
+      function vistaOra() {
+        sync();
         var durata = durataTotale();
         var oggi = new Date();
         var giorni = [];
@@ -138,9 +155,15 @@
         var corpo;
 
         if (!scelto || !scelto.liberi.length) {
-          corpo = '<div class="bk-empty">Nessuna disponibilità in questo giorno.' +
-            (primoUtile ? ' Primo giorno libero: <button class="bk-link" type="button" data-act="giorno" data-key="' +
-              primoUtile.key + '">' + E.labelData(primoUtile.d) + '</button>.' : '') + '</div>';
+          corpo = '<div class="bk-empty">' +
+            '<b>Completamente prenotato in questa data.</b>' +
+            (primoUtile
+              ? '<span>Disponibile da ' + esc(E.labelData(primoUtile.d)) + '</span>' +
+                '<button class="bk-cta bk-cta-ghost" type="button" data-act="giorno" data-key="' +
+                primoUtile.key + '">Vai alla prossima data disponibile</button>'
+              : '<span>Nessuna disponibilità nei prossimi ' + orizzonte + ' giorni. ' +
+                'Chiama il negozio allo ' + esc(E.db.settings.telefonoLabel) + '.</span>') +
+            '</div>';
         } else {
           var fasce = [
             ['Mattina', function (o) { return E.toMin(o) < 12 * 60; }],
@@ -153,18 +176,41 @@
             return '<div class="bk-slot-group"><h3 class="bk-group-title">' + f[0] + '</h3><div class="bk-slots">' +
               s.map(function (x) {
                 return '<button class="bk-slot" type="button" data-act="slot" data-ora="' + x.ora +
-                  '" data-barber="' + x.barberId + '" aria-pressed="' + (S.ora === x.ora) + '">' + x.ora + '</button>';
+                  '" data-barber="' + x.barberId + '" aria-pressed="' + (S.ora === x.ora) + '">' +
+                  '<span>' + x.ora + '</span></button>';
               }).join('') + '</div></div>';
           }).join('');
         }
 
-        return '<p class="bk-sub">Durata prevista ' + E.durataLabel(durata) + '.</p>' +
+        return '<h3 class="bk-group-title">Seleziona una data</h3>' +
           '<div class="bk-days">' + strip + '</div>' + corpo;
       }
 
-      function vistaDati() {
-          sync();
-        return '<p class="bk-sub">Ci servono solo per riconoscerti quando arrivi.</p>' +
+      /* ----------------------------------------------------------- conferma */
+
+      /* Dati e riepilogo stanno sullo stesso schermo: Fresha chiude in quattro
+         passi e il carrello a lato mostra già servizi, orario e totale. */
+      function vistaConferma() {
+        sync();
+        var t = totali();
+        var barbiere = S.barberAssegnato ? E.byId(E.db.barbers, S.barberAssegnato) : null;
+        var d = E.at(S.dataKey, 0);
+
+        var righe = [
+          ['Quando', E.labelData(d) + '<br>ore ' + esc(S.ora)],
+          ['Barbiere', barbiere ? esc(barbiere.nome) : '—'],
+          ['Servizi', t.servizi.map(function (s) { return esc(s.nome); }).join('<br>')],
+          ['Durata', E.durataLabel(t.durata)]
+        ];
+
+        return '<dl class="bk-recap">' +
+            righe.map(function (x) {
+              return '<div class="bk-recap-row"><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>';
+            }).join('') +
+            '<div class="bk-recap-row bk-recap-total"><dt>Totale</dt><dd>' + E.euro(t.prezzo) + '</dd></div>' +
+          '</dl>' +
+          '<h3 class="bk-group-title">I tuoi dati</h3>' +
+          '<p class="bk-sub">Ci servono solo per riconoscerti quando arrivi.</p>' +
           '<label class="bk-field"><span>Nome</span>' +
             '<input name="nome" type="text" autocomplete="given-name" value="' + esc(S.nome) + '" required></label>' +
           '<label class="bk-field"><span>Cognome</span>' +
@@ -178,35 +224,10 @@
           '<span>Ho letto l\'informativa privacy e acconsento al trattamento dei miei dati per la gestione della prenotazione.</span></label>';
       }
 
-      function riepilogoDati() {
-          sync();
-        var t = totali();
-        var barbiere = S.barberAssegnato ? E.byId(E.db.barbers, S.barberAssegnato) : null;
-        var d = E.at(S.dataKey, 0);
-        return { t: t, barbiere: barbiere, d: d };
-      }
-
-      function vistaRiepilogo() {
-          sync();
-        var r = riepilogoDati();
-        var righe = [
-          ['Servizi', r.t.servizi.map(function (s) { return esc(s.nome); }).join('<br>')],
-          ['Durata', E.durataLabel(r.t.durata)],
-          ['Barbiere', r.barbiere ? esc(r.barbiere.nome) : '—'],
-          ['Quando', E.labelData(r.d) + '<br>ore ' + S.ora],
-          ['Cliente', esc(S.nome) + ' ' + esc(S.cognome) + '<br>' + esc(E.normalizzaTelefono(S.telefono))]
-        ];
-        if (S.note) righe.push(['Note', esc(S.note)]);
-
-        return '<p class="bk-sub">Ancora un controllo, poi sei a posto.</p><dl class="bk-recap">' +
-          righe.map(function (x) {
-            return '<div class="bk-recap-row"><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>';
-          }).join('') +
-          '<div class="bk-recap-row bk-recap-total"><dt>Totale</dt><dd>' + E.euro(r.t.prezzo) + '</dd></div></dl>';
-      }
+      /* -------------------------------------------------------------- fatto */
 
       function vistaFatto() {
-          sync();
+        sync();
         var b = S.booking;
         var barbiere = E.byId(E.db.barbers, b.barberId);
         var d = E.parse(b.inizio);
@@ -233,8 +254,8 @@
       }
 
       return {
-        lunghezza: vistaLunghezza, servizi: vistaServizi, barbiere: vistaBarbiere,
-        quando: vistaQuando, dati: vistaDati, riepilogo: vistaRiepilogo, fatto: vistaFatto
+        servizi: vistaServizi, professionista: vistaProfessionista,
+        ora: vistaOra, conferma: vistaConferma, fatto: vistaFatto
       };
     }
   };

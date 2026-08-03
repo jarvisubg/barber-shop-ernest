@@ -1,29 +1,40 @@
 /* Barber Shop Ernest — flusso di prenotazione pubblico.
    Si aggancia ai bottoni [data-booking-trigger] già presenti nella pagina e
-   monta il riquadro d'ingresso dentro #booking-root. */
+   monta il riquadro d'ingresso dentro #booking-root.
+
+   Il flusso ricalca quello di Fresha: quattro passi con briciole cliccabili in
+   cima e un carrello sempre visibile a lato. Su schermo stretto il carrello
+   sparisce e resta la barra in basso con totale e "Continua". */
 (function (global, E) {
   'use strict';
   if (!E) return;
 
-  var STEPS = ['lunghezza', 'servizi', 'barbiere', 'quando', 'dati', 'riepilogo', 'fatto'];
+  var STEPS = ['servizi', 'professionista', 'ora', 'conferma', 'fatto'];
+
+  /* le briciole mostrano solo i passi navigabili: 'fatto' è la ricevuta */
+  var CRUMBS = [
+    ['servizi', 'Servizi'],
+    ['professionista', 'Professionista'],
+    ['ora', 'Ora'],
+    ['conferma', 'Conferma']
+  ];
+
   var TITOLI = {
-    lunghezza: 'Come porti i capelli?',
-    servizi: 'Cosa ti serve.',
-    barbiere: 'Con chi.',
-    quando: 'Quando.',
-    dati: 'I tuoi dati.',
-    riepilogo: 'Controlla e conferma.',
+    servizi: 'Seleziona uno o più servizi',
+    professionista: 'Scegli il barbiere',
+    ora: 'Seleziona data e ora',
+    conferma: 'Conferma la prenotazione',
     fatto: 'Ci vediamo.'
   };
 
   var S = null;
-  var overlay, elBody, elFoot, elStep, elBar;
+  var overlay, elBody, elFoot, elCrumbs, elTitolo, elH, elCart;
 
   function nuovoStato() {
     return {
       vista: 'prenota',        // 'prenota' | 'gestisci'
       step: 0,
-      lunghezza: null,
+      catAttiva: 'evidenza',   // pill aperta nel listino
       serviziIds: [],
       barberId: undefined,     // undefined = non scelto, null = primo disponibile
       dataKey: null,
@@ -49,6 +60,22 @@
 
   function totali() { return E.totali(S.serviziIds); }
 
+  /* La lunghezza dei capelli non si chiede più: era un passo in più prima di
+     vedere il listino. Resta come nota per il barbiere nel gestionale e la si
+     deduce dai servizi scelti.
+     ponytail: euristica sul nome — i servizi "lunghi" sono quelli con shampoo.
+     Se il negozio adotta altre convenzioni il campo scivola su 'corti': in quel
+     caso si mette un flag esplicito sul servizio, non si allarga l'euristica. */
+  function lunghezzaDedotta() {
+    var list = E.servizi(S.serviziIds);
+    if (!list.length) return null;
+    var taglio = list.some(function (s) {
+      return s.categoria === 'capelli' || s.categoria === 'combo';
+    });
+    if (!taglio) return 'solo_barba';
+    return list.some(function (s) { return /lungh/i.test(s.nome); }) ? 'lunghi' : 'corti';
+  }
+
   /* le schermate dei singoli passi vivono in widget-viste.js */
   var VISTE = global.ErnestViste.crea({
     E: E, esc: esc, totali: totali, stato: function () { return S; }
@@ -62,20 +89,30 @@
         '<div class="bk-top">' +
           '<div class="bk-shell bk-top-row">' +
             '<button class="bk-icon-btn" type="button" data-act="indietro">← Indietro</button>' +
-            '<span class="bk-step-label" data-el="step"></span>' +
+            '<span class="bk-top-title" data-el="titolo"></span>' +
             '<button class="bk-icon-btn" type="button" data-act="chiudi" aria-label="Chiudi">✕</button>' +
           '</div>' +
-          '<div class="bk-progress"><span data-el="bar" style="width:0%"></span></div>' +
         '</div>' +
-        '<div class="bk-body"><div class="bk-shell" data-el="body"></div></div>' +
+        '<div class="bk-body">' +
+          '<div class="bk-shell bk-layout">' +
+            '<div class="bk-main">' +
+              '<nav class="bk-crumbs" data-el="crumbs" aria-label="Fasi della prenotazione"></nav>' +
+              '<h2 class="bk-h" data-el="h"></h2>' +
+              '<div class="bk-view" data-el="body"></div>' +
+            '</div>' +
+            '<aside class="bk-cart" data-el="cart" aria-label="Riepilogo"></aside>' +
+          '</div>' +
+        '</div>' +
         '<div class="bk-foot"><div class="bk-shell bk-foot-row" data-el="foot"></div></div>' +
       '</div>'
     );
     document.body.appendChild(overlay);
     elBody = overlay.querySelector('[data-el="body"]');
     elFoot = overlay.querySelector('[data-el="foot"]');
-    elStep = overlay.querySelector('[data-el="step"]');
-    elBar = overlay.querySelector('[data-el="bar"]');
+    elCrumbs = overlay.querySelector('[data-el="crumbs"]');
+    elTitolo = overlay.querySelector('[data-el="titolo"]');
+    elH = overlay.querySelector('[data-el="h"]');
+    elCart = overlay.querySelector('[data-el="cart"]');
 
     overlay.addEventListener('click', onClick);
     overlay.addEventListener('input', onInput);
@@ -110,11 +147,8 @@
     if (act === 'gestisci') { S = nuovoStato(); S.vista = 'gestisci'; return render(); }
     if (act === 'prenota') { S = nuovoStato(); return render(); }
 
-    if (act === 'lunghezza') {
-      S.lunghezza = b.dataset.val;
-      S.step = 1;
-      return render();
-    }
+    if (act === 'crumb') return vaiAllo(Number(b.dataset.step));
+    if (act === 'categoria') { S.catAttiva = b.dataset.cat; return render(); }
 
     if (act === 'servizio') {
       toggleServizio(b.dataset.id);
@@ -124,7 +158,7 @@
     if (act === 'barbiere') {
       S.barberId = b.dataset.id === 'auto' ? null : b.dataset.id;
       S.ora = null; S.barberAssegnato = null;
-      S.step = 3;
+      S.step = STEPS.indexOf('ora');
       return render();
     }
 
@@ -147,7 +181,10 @@
     var t = ev.target;
     if (!t.name) return;
     S[t.name] = t.type === 'checkbox' ? t.checked : t.value;
+    // il pulsante vive in due posti — carrello su desktop, barra in basso su
+    // mobile: riabilitarne uno solo lasciava il tasto spento dove si guarda
     if (t.name === 'consenso' || t.name === 'telefono' || t.name === 'nome' || t.name === 'cognome') {
+      aggiornaCarrello();
       aggiornaPiede();
     }
   }
@@ -172,6 +209,7 @@
       }
       S.serviziIds.push(id);
     }
+    // cambiare servizi cambia la durata: l'orario scelto potrebbe non entrarci più
     S.ora = null;
     S.errore = null;
   }
@@ -180,16 +218,38 @@
 
   function puoAvanzare() {
     switch (STEPS[S.step]) {
-      case 'lunghezza': return !!S.lunghezza;
       case 'servizi': return !E.validaSelezione(S.serviziIds);
-      case 'barbiere': return S.barberId !== undefined;
-      case 'quando': return !!(S.dataKey && S.ora);
-      case 'dati':
+      case 'professionista': return S.barberId !== undefined;
+      case 'ora': return !!(S.dataKey && S.ora);
+      case 'conferma':
         return !!(String(S.nome).trim() && String(S.cognome).trim() &&
           E.telefonoValido(S.telefono) && S.consenso);
-      case 'riepilogo': return true;
       default: return false;
     }
+  }
+
+  /* Una briciola è raggiungibile solo se tutti i passi prima sono completi:
+     saltare a "Ora" senza servizi darebbe una griglia di orari senza durata. */
+  function completo(step) {
+    switch (STEPS[step]) {
+      case 'servizi': return !E.validaSelezione(S.serviziIds);
+      case 'professionista': return S.barberId !== undefined;
+      case 'ora': return !!(S.dataKey && S.ora);
+      default: return false;
+    }
+  }
+
+  function raggiungibile(step) {
+    if (step <= S.step) return true;
+    for (var i = 0; i < step; i++) if (!completo(i)) return false;
+    return true;
+  }
+
+  function vaiAllo(step) {
+    if (!raggiungibile(step)) return;
+    S.errore = null;
+    S.step = step;
+    render();
   }
 
   function avanti() {
@@ -197,6 +257,7 @@
       var err = E.validaSelezione(S.serviziIds);
       if (err) { S.errore = err; return render(); }
     }
+    if (STEPS[S.step] === 'conferma') return conferma();
     if (!puoAvanzare()) return;
     S.errore = null;
     S.step = Math.min(S.step + 1, STEPS.length - 1);
@@ -217,14 +278,65 @@
     if (S.vista === 'gestisci') return renderGestisci();
 
     var nome = STEPS[S.step];
-    elStep.textContent = nome === 'fatto' ? 'Confermata'
-      : 'Passo ' + (S.step + 1) + ' di ' + (STEPS.length - 1);
-    elBar.style.width = ((S.step / (STEPS.length - 1)) * 100) + '%';
+    elTitolo.textContent = TITOLI[nome];
+    elH.textContent = TITOLI[nome];
+    elCrumbs.innerHTML = nome === 'fatto' ? '' : briciole();
+    overlay.dataset.cart = nome === 'fatto' ? 'false' : 'true';
 
-    elBody.innerHTML = '<h2 class="bk-h">' + TITOLI[nome] + '</h2>' + VISTE[nome]();
+    elBody.innerHTML = VISTE[nome]();
     if (S.errore) elBody.insertAdjacentHTML('beforeend', '<p class="bk-error">' + esc(S.errore) + '</p>');
-    elBody.parentElement.scrollTop = 0;
+    elBody.closest('.bk-body').scrollTop = 0;
+    aggiornaCarrello();
     aggiornaPiede();
+  }
+
+  function briciole() {
+    return CRUMBS.map(function (c, i) {
+      var stato = i === S.step ? 'attivo' : (raggiungibile(i) ? 'aperto' : 'chiuso');
+      return '<button class="bk-crumb" type="button" data-act="crumb" data-step="' + i + '"' +
+        ' data-stato="' + stato + '"' + (stato === 'chiuso' ? ' disabled' : '') +
+        (i === S.step ? ' aria-current="step"' : '') + '>' + c[1] + '</button>';
+    }).join('<span class="bk-crumb-sep" aria-hidden="true">›</span>');
+  }
+
+  /* Carrello sempre visibile: su Fresha è la colonna che dà sicurezza al
+     cliente mentre naviga. Su schermo stretto lo nasconde il CSS e il totale
+     resta nella barra in basso. */
+  function aggiornaCarrello() {
+    var t = totali();
+    var righe = t.servizi.length
+      ? t.servizi.map(function (s) {
+          return '<div class="bk-cart-row">' +
+            '<span class="bk-cart-name">' + esc(s.nome) + '</span>' +
+            '<span class="bk-cart-price">' + E.euro(s.prezzo) + '</span>' +
+            '<span class="bk-cart-dur">' + E.durataLabel(s.durata) + '</span>' +
+          '</div>';
+        }).join('')
+      : '<p class="bk-cart-vuoto">Nessun servizio selezionato.</p>';
+
+    var quando = '';
+    if (S.dataKey && S.ora) {
+      var barbiere = S.barberAssegnato ? E.byId(E.db.barbers, S.barberAssegnato) : null;
+      quando = '<div class="bk-cart-quando">' +
+        esc(E.labelData(E.at(S.dataKey, 0))) + ' · ore ' + esc(S.ora) +
+        (barbiere ? '<br>con ' + esc(barbiere.nome) : '') + '</div>';
+    }
+
+    var etichetta = STEPS[S.step] === 'conferma' ? 'Conferma prenotazione' : 'Continua →';
+
+    elCart.innerHTML =
+      '<div class="bk-cart-head">' +
+        '<img src="images/barber-ernest/shop-hero.webp" alt="" width="56" height="56" loading="lazy">' +
+        '<div><b>Barber Shop Ernest</b>' +
+        '<span>Corso Giuseppe Mazzini 128, Faenza</span></div>' +
+      '</div>' +
+      '<div class="bk-cart-items">' + righe + '</div>' +
+      quando +
+      '<div class="bk-cart-total"><span>Totale</span>' +
+        '<b>' + (t.prezzo ? E.euro(t.prezzo) : '—') + '</b></div>' +
+      (t.durata ? '<div class="bk-cart-dur-tot">Durata prevista ' + E.durataLabel(t.durata) + '</div>' : '') +
+      '<button class="bk-cta bk-cart-cta" type="button" data-act="avanti"' +
+        (puoAvanzare() ? '' : ' disabled') + '>' + etichetta + '</button>';
   }
 
   function aggiornaPiede() {
@@ -237,28 +349,28 @@
       ? t.servizi.length + (t.servizi.length === 1 ? ' servizio · ' : ' servizi · ') + E.durataLabel(t.durata)
       : 'Nessun servizio selezionato';
 
-    var etichetta = nome === 'riepilogo' ? 'Conferma prenotazione' : 'Continua';
-    var azione = nome === 'riepilogo' ? 'conferma' : 'avanti';
+    var etichetta = nome === 'conferma' ? 'Conferma prenotazione' : 'Continua';
 
     elFoot.innerHTML =
       '<div class="bk-total">' +
         '<span class="bk-total-main">' + (t.prezzo ? E.euro(t.prezzo) : '—') + '</span>' +
         '<span class="bk-total-sub">' + esc(righe) + '</span>' +
       '</div>' +
-      '<button class="bk-cta" type="button" data-act="' + azione + '"' +
+      '<button class="bk-cta" type="button" data-act="avanti"' +
         (puoAvanzare() ? '' : ' disabled') + '>' + etichetta + '</button>';
   }
 
   function conferma() {
-    var cta = elFoot.querySelector('.bk-cta');
-    if (cta) { cta.disabled = true; cta.textContent = 'Invio…'; }
+    if (!puoAvanzare()) return;
+    var cta = overlay.querySelectorAll('.bk-cta[data-act="avanti"]');
+    Array.prototype.forEach.call(cta, function (b) { b.disabled = true; b.textContent = 'Invio…'; });
 
     var res = E.creaPrenotazione({
       serviziIds: S.serviziIds,
       nome: S.nome, cognome: S.cognome, telefono: S.telefono,
       barberId: S.barberAssegnato || S.barberId || null,
       inizio: S.dataKey + 'T' + S.ora,
-      lunghezzaCapelli: S.lunghezza,
+      lunghezzaCapelli: lunghezzaDedotta(),
       note: S.note,
       consenso: S.consenso,
       origine: 'online'
@@ -267,7 +379,7 @@
     if (!res.ok) {
       S.errore = res.error;
       // se lo slot è saltato, si torna alla scelta dell'orario
-      if (/orario/.test(res.error)) { S.ora = null; S.step = 3; }
+      if (/orario/.test(res.error)) { S.ora = null; S.step = STEPS.indexOf('ora'); }
       return render();
     }
 
@@ -314,9 +426,11 @@
   /* ------------------------------------------------------- gestione/disdetta */
 
   function renderGestisci() {
-    elStep.textContent = 'Gestisci prenotazione';
-    elBar.style.width = '0%';
+    elTitolo.textContent = 'Gestisci prenotazione';
+    elCrumbs.innerHTML = '';
+    overlay.dataset.cart = 'false';
     elFoot.parentElement.style.display = 'none';
+    elH.textContent = 'La tua prenotazione.';
 
     var esito = S.esitoGestione;
     var corpo;
@@ -348,8 +462,8 @@
         '<button class="bk-link" type="button" data-act="prenota">Torna alla prenotazione</button>';
     }
 
-    elBody.innerHTML = '<h2 class="bk-h">La tua prenotazione.</h2>' + corpo;
-    elBody.parentElement.scrollTop = 0;
+    elBody.innerHTML = corpo;
+    elBody.closest('.bk-body').scrollTop = 0;
   }
 
   function schedaTrovata() {

@@ -7,7 +7,11 @@
 (function (global, T, SEED) {
   'use strict';
 
-  var STORE_KEY = 'ernest-booking-v2';
+  /* Il listino vive dentro il database salvato, non viene riletto dal seed a
+     ogni avvio: chi ha già aperto il sito resterebbe sui vecchi prezzi per
+     sempre. Quando il listino cambia si alza la versione della chiave, così il
+     database riparte dal seed nuovo. */
+  var STORE_KEY = 'ernest-booking-v3';
 
   /* helper di data/ora e formato: vivono in tempo.js */
   var pad = T.pad, dayKey = T.dayKey, toMin = T.toMin, toHHMM = T.toHHMM, at = T.at,

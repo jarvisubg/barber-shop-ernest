@@ -5,21 +5,28 @@
   'use strict';
 
   /* Prezzi e durate reali del negozio. prezzoPieno esiste solo sui combo e
-     serve a calcolare il risparmio mostrato in UI: non va mai hardcodato. */
-  var SERVIZI = [
-    { id: 'cap-lunghi', nome: 'Capelli Lunghi', descrizione: 'Shampoo + taglio', categoria: 'capelli', durata: 40, prezzo: 20, ordine: 1, attivo: true },
-    { id: 'cap-base', nome: 'Taglio Base', descrizione: 'Taglio senza shampoo', categoria: 'capelli', durata: 30, prezzo: 15, ordine: 2, attivo: true },
-    { id: 'cap-rasatura', nome: 'Rasatura Unica', descrizione: 'Taglio con la stessa misura su tutta la testa', categoria: 'capelli', durata: 20, prezzo: 12, ordine: 3, attivo: true },
+     serve a calcolare il risparmio mostrato in UI: non va mai hardcodato.
 
-    { id: 'barba-lunga', nome: 'Barba Lunga', descrizione: 'Panno caldo + panno freddo + shampoo di barba', categoria: 'barba', durata: 30, prezzo: 15, ordine: 1, attivo: true },
-    { id: 'barba-normale', nome: 'Barba Normale', descrizione: 'Taglio di barba', categoria: 'barba', durata: 15, prezzo: 7, ordine: 2, attivo: true },
+     `evidenza` è la posizione nella sezione "In evidenza" in cima al listino:
+     sono le voci che il negozio vende di più e vuole far vedere per prime.
+     Senza il campo il servizio esiste ancora, ma solo dentro la sua categoria.
+     L'ordine è quello deciso dal negozio, non il prezzo: non riordinarlo. */
+  var SERVIZI = [
+    { id: 'cap-base', nome: 'Taglio Base', descrizione: 'Taglio senza shampoo', categoria: 'capelli', durata: 30, prezzo: 15, ordine: 1, evidenza: 1, attivo: true },
+    { id: 'cap-lunghi', nome: 'Capelli Lunghi', descrizione: 'Shampoo + taglio', categoria: 'capelli', durata: 40, prezzo: 20, ordine: 2, attivo: true },
+    { id: 'cap-bimbo', nome: 'Taglio Bimbo', descrizione: 'Da 0 a 10 anni', categoria: 'capelli', durata: 20, prezzo: 12, ordine: 3, evidenza: 3, attivo: true },
+    { id: 'cap-rasatura', nome: 'Rasatura Unica', descrizione: 'Taglio con la stessa misura su tutta la testa', categoria: 'capelli', durata: 20, prezzo: 12, ordine: 4, attivo: true },
+
+    { id: 'barba-normale', nome: 'Barba Normale', descrizione: 'Taglio di barba', categoria: 'barba', durata: 15, prezzo: 10, ordine: 1, evidenza: 7, attivo: true },
+    { id: 'barba-lunga', nome: 'Barba Lunga', descrizione: 'Panno caldo + panno freddo + shampoo di barba', categoria: 'barba', durata: 30, prezzo: 15, ordine: 2, evidenza: 8, attivo: true },
     { id: 'barba-full', nome: 'Rasatura Full', descrizione: 'Rasatura completa a rasoio', categoria: 'barba', durata: 20, prezzo: 10, ordine: 3, attivo: true },
 
-    { id: 'combo-completo', nome: 'Capelli Lunghi + Barba Lunga', descrizione: 'Taglio capelli e barba con shampoo', categoria: 'combo', durata: 60, prezzo: 30, prezzoPieno: 35, ordine: 1, attivo: true },
-    { id: 'combo-base', nome: 'Capelli & Barba', descrizione: 'Taglio capelli e barba senza shampoo', categoria: 'combo', durata: 30, prezzo: 20, prezzoPieno: 22, ordine: 2, attivo: true },
+    { id: 'combo-base', nome: 'Capelli + Barba', descrizione: 'Taglio capelli e barba senza shampoo', categoria: 'combo', durata: 30, prezzo: 20, prezzoPieno: 25, ordine: 1, evidenza: 2, attivo: true },
+    { id: 'combo-shampoo', nome: 'Capelli + Barba + Shampoo', descrizione: 'Taglio capelli e barba, shampoo incluso', categoria: 'combo', durata: 45, prezzo: 25, prezzoPieno: 30, ordine: 2, evidenza: 4, attivo: true },
+    { id: 'combo-completo', nome: 'Capelli Lunghi + Barba Lunga', descrizione: 'Taglio capelli e barba lunga, shampoo incluso', categoria: 'combo', durata: 60, prezzo: 30, prezzoPieno: 35, ordine: 3, evidenza: 5, attivo: true },
 
-    { id: 'extra-sopracciglia', nome: 'Sopracciglia', descrizione: 'Sistemazione sopracciglia', categoria: 'extra', durata: 5, prezzo: 5, ordine: 1, attivo: true },
-    { id: 'extra-hairstyle', nome: 'Hairstyle', descrizione: 'Lavaggio capelli + hairstyle', categoria: 'extra', durata: 10, prezzo: 7, ordine: 2, attivo: true },
+    { id: 'extra-sopracciglia', nome: 'Sopracciglia', descrizione: 'Sistemazione sopracciglia', categoria: 'extra', durata: 5, prezzo: 5, ordine: 1, evidenza: 6, attivo: true },
+    { id: 'extra-hairstyle', nome: 'Styling', descrizione: 'Lavaggio capelli + piega', categoria: 'extra', durata: 10, prezzo: 7, ordine: 2, evidenza: 9, attivo: true },
     { id: 'extra-cera', nome: 'Cera Calda', descrizione: 'Pulizia viso + naso a cera', categoria: 'extra', durata: 10, prezzo: 7, ordine: 3, attivo: true }
   ];
 
@@ -71,9 +78,9 @@
 
   var RICETTE = [
     ['combo-completo'], ['cap-base'], ['cap-lunghi', 'extra-sopracciglia'], ['barba-lunga'],
-    ['combo-base'], ['cap-rasatura', 'barba-normale'], ['cap-base', 'extra-cera'], ['barba-full'],
-    ['combo-completo', 'extra-sopracciglia'], ['cap-lunghi'], ['barba-normale'], ['combo-base', 'extra-hairstyle'],
-    ['cap-base', 'barba-normale'], ['cap-rasatura'], ['combo-completo']
+    ['combo-base'], ['cap-bimbo'], ['cap-base', 'extra-cera'], ['barba-full'],
+    ['combo-shampoo'], ['cap-lunghi'], ['barba-normale'], ['combo-base', 'extra-hairstyle'],
+    ['cap-base', 'barba-normale'], ['cap-bimbo', 'extra-sopracciglia'], ['combo-shampoo']
   ];
 
   /* Popola le prenotazioni dimostrative usando le stesse funzioni del motore,

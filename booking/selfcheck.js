@@ -135,6 +135,26 @@
       var x = E.cancellaConCodice(a.booking.codice, '3339999999');
       ok('telefono errato non cancella', !x.ok && x.motivo === 'non_trovata');
 
+      /* 10b — listino: le voci in evidenza sono quelle decise dal negozio, in
+         quell'ordine, e ai prezzi concordati. Se qualcuno tocca il seed o
+         l'ordine, questo test lo dice prima che se ne accorga il cliente. */
+      var atteso = [
+        ['cap-base', 15], ['combo-base', 20], ['cap-bimbo', 12], ['combo-shampoo', 25],
+        ['combo-completo', 30], ['extra-sopracciglia', 5], ['barba-normale', 10],
+        ['barba-lunga', 15], ['extra-hairstyle', 7]
+      ];
+      var vetrina = db.services.filter(function (s) { return s.attivo && s.evidenza; })
+        .sort(function (a, b) { return a.evidenza - b.evidenza; });
+      ok('vetrina: ordine e prezzi come da listino',
+        vetrina.length === atteso.length && atteso.every(function (x, i) {
+          return vetrina[i].id === x[0] && vetrina[i].prezzo === x[1];
+        }));
+
+      // 10c — un combo costa meno dei suoi pezzi presi separatamente
+      ok('il combo conviene davvero', db.services
+        .filter(function (s) { return s.categoria === 'combo'; })
+        .every(function (s) { return s.prezzoPieno > s.prezzo; }));
+
       // 11 — chiusura negozio blocca tutti i barbieri
       db.closures.push({ id: E.uid(), inizio: key + 'T00:00', fine: key + 'T23:59', motivo: 'test' });
       ok('chiusura blocca tutti', E.slotsFor(key, null, 30, { ignoraAnticipo: true }).length === 0);

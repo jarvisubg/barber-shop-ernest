@@ -31,7 +31,20 @@
 .bk-overlay[data-open="true"] { display: flex; }
 body.bk-locked { overflow: hidden; }
 
-.bk-shell { width: min(calc(100% - 32px), 720px); margin-inline: auto; }
+.bk-shell { width: min(calc(100% - 32px), 1080px); margin-inline: auto; }
+
+/* Due colonne come su Fresha: il flusso a sinistra, il carrello a destra.
+   Sotto i 1000px il carrello sparisce e il totale resta nella barra in basso —
+   il piede è già lì e non va duplicato. */
+.bk-layout { display: grid; gap: 34px; }
+.bk-main { min-width: 0; }
+
+@media (min-width: 1000px) {
+  .bk-overlay[data-cart="true"] .bk-layout { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+
+/* ricevuta e gestione prenotazione non hanno carrello: colonna singola stretta */
+.bk-overlay[data-cart="false"] .bk-layout { max-width: 720px; }
 
 /* --------------------------------------------------------------- testa */
 
@@ -49,12 +62,15 @@ body.bk-locked { overflow: hidden; }
   min-height: 64px;
 }
 
-.bk-step-label {
+.bk-top-title {
+  overflow: hidden;
   font-family: var(--bk-display);
   font-weight: 800;
   font-size: .74rem;
   letter-spacing: .14em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--bk-muted);
 }
 
@@ -77,13 +93,34 @@ body.bk-locked { overflow: hidden; }
 
 .bk-icon-btn:hover { border-color: var(--bk-paper); }
 
-.bk-progress { height: 2px; background: var(--bk-line); }
-.bk-progress span {
-  display: block;
-  height: 100%;
-  background: var(--bk-paper);
-  transition: width 260ms ease;
+/* ---------------------------------------------------------- briciole */
+
+/* Sostituiscono la barra "Passo 3 di 6": dicono a che punto sei e riportano
+   indietro con un tocco, come su Fresha. I passi non ancora raggiungibili
+   restano visibili ma spenti — nascondere il percorso lo rende più lungo. */
+.bk-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
 }
+
+.bk-crumb {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--bk-muted);
+  font: 800 .72rem/1 var(--bk-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bk-crumb[data-stato="attivo"] { color: var(--bk-paper); }
+.bk-crumb[data-stato="aperto"]:hover { color: var(--bk-paper); text-decoration: underline; text-underline-offset: 4px; }
+.bk-crumb[disabled] { opacity: .4; cursor: default; }
+.bk-crumb-sep { color: var(--bk-muted); font-size: .8rem; opacity: .6; }
 
 /* -------------------------------------------------------------- corpo */
 
@@ -95,15 +132,19 @@ body.bk-locked { overflow: hidden; }
 }
 
 .bk-h {
-  margin: 0 0 6px;
+  margin: 0;
   font-family: var(--bk-display);
   font-weight: 800;
-  font-size: clamp(2.1rem, 9vw, 3.2rem);
-  line-height: .92;
+  /* i titoli del flusso sono frasi intere ("Seleziona uno o più servizi"), non
+     una parola: a 9vw l'ultima riga arrivava a filo dello schermo su iPhone */
+  font-size: clamp(1.9rem, 7.4vw, 3.2rem);
+  line-height: .96;
   letter-spacing: -.02em;
   text-transform: uppercase;
+  text-wrap: balance;
 }
 
+.bk-view { margin-top: 22px; }
 .bk-sub { margin: 0 0 26px; color: var(--bk-muted); font-size: .98rem; }
 
 .bk-group-title {
@@ -117,6 +158,130 @@ body.bk-locked { overflow: hidden; }
 }
 
 .bk-group-title:first-child { margin-top: 0; }
+
+/* -------------------------------------------------- pill di categoria */
+
+/* Scorrono in orizzontale su mobile invece di andare a capo: una fila sola
+   dice a colpo d'occhio quante categorie ci sono. */
+.bk-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.bk-pill {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--bk-line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--bk-paper);
+  font: 800 .76rem/1 var(--bk-display);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.bk-pill:hover { border-color: var(--bk-paper); }
+.bk-pill[aria-pressed="true"] {
+  border-color: var(--bk-paper);
+  background: var(--bk-paper);
+  color: var(--bk-ink);
+}
+
+/* ------------------------------------------------------ card servizio */
+
+.bk-cards { display: grid; gap: 10px; }
+
+.bk-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--bk-line);
+  border-radius: 0;
+  background: var(--bk-raised);
+  color: var(--bk-paper);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.bk-card:hover { border-color: var(--bk-line-strong); }
+.bk-card[data-selected="true"] { border-color: var(--bk-paper); background: #171a1c; }
+.bk-card[disabled] { opacity: .35; cursor: not-allowed; }
+
+.bk-card-name {
+  font-family: var(--bk-display);
+  font-weight: 800;
+  font-size: 1.32rem;
+  line-height: 1;
+  letter-spacing: -.01em;
+  text-transform: uppercase;
+}
+
+.bk-card-dur {
+  font: 800 .72rem/1 var(--bk-display);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--bk-muted);
+}
+
+/* La descrizione è tagliata a due righe come su Fresha: le schede restano
+   della stessa altezza e la lista si scorre a colpo d'occhio. */
+.bk-card-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--bk-muted);
+  font-size: .88rem;
+}
+
+.bk-card-desc:empty { display: none; }
+
+.bk-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.bk-card-prezzo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 800 1.24rem/1 var(--bk-display);
+}
+
+.bk-card-prezzo s { color: var(--bk-muted); font-size: .82rem; font-weight: 400; }
+
+/* il "+" va all'estremità della riga, come il tondo di Fresha */
+.bk-card-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: 1px solid var(--bk-line-strong);
+  font: 400 1.25rem/1 var(--bk-body);
+}
+
+.bk-card[data-selected="true"] .bk-card-add {
+  border-color: var(--bk-paper);
+  background: var(--bk-paper);
+  color: var(--bk-ink);
+}
 
 /* ----------------------------------------------------- scelte a tessera */
 
@@ -258,21 +423,22 @@ body.bk-locked { overflow: hidden; }
 
 .bk-slot-group { margin-top: 24px; }
 
-.bk-slots {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
+/* Righe piene una sotto l'altra come su Fresha: l'orario è la cosa più grossa
+   della riga e il bersaglio da toccare è largo quanto la colonna. */
+.bk-slots { display: grid; gap: 8px; margin-top: 10px; }
 
 .bk-slot {
-  min-height: 48px;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 20px;
   border: 1px solid var(--bk-line);
   border-radius: 0;
   background: var(--bk-raised);
   color: var(--bk-paper);
-  font: 800 1.05rem/1 var(--bk-display);
-  letter-spacing: .02em;
+  font: 800 1.15rem/1 var(--bk-display);
+  letter-spacing: .04em;
+  text-align: left;
   cursor: pointer;
 }
 
@@ -280,10 +446,19 @@ body.bk-locked { overflow: hidden; }
 .bk-slot[aria-pressed="true"] { border-color: var(--bk-paper); background: var(--bk-paper); color: var(--bk-ink); }
 
 .bk-empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
   margin-top: 24px;
-  padding: 22px 18px;
+  padding: 26px 20px;
   border: 1px dashed var(--bk-line-strong);
   color: var(--bk-muted);
+}
+
+.bk-empty b {
+  font: 800 1.3rem/1.1 var(--bk-display);
+  text-transform: uppercase;
+  color: var(--bk-paper);
 }
 
 /* ------------------------------------------------------------- campi */
@@ -357,6 +532,101 @@ body.bk-locked { overflow: hidden; }
 
 .bk-recap-row dd { margin: 0; text-align: right; }
 .bk-recap-total dd { font: 800 1.6rem/1 var(--bk-display); }
+
+/* ------------------------------------------------------------ carrello */
+
+/* Sotto i 1000px non c'è spazio per due colonne: il totale sta già nella barra
+   in basso, quindi il carrello si toglie invece di finire in fondo alla
+   pagina, dove nessuno lo leggerebbe. */
+.bk-cart { display: none; }
+
+@media (min-width: 1000px) {
+  .bk-overlay[data-cart="true"] .bk-cart {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    padding: 22px 20px;
+    border: 1px solid var(--bk-line);
+    background: var(--bk-raised);
+  }
+
+  /* con il carrello a fianco la barra in basso direbbe due volte la stessa
+     cosa, e il pulsante vero è quello nel carrello */
+  .bk-overlay[data-cart="true"] .bk-foot { display: none; }
+}
+
+.bk-cart-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--bk-line);
+}
+
+.bk-cart-head img { width: 56px; height: 56px; object-fit: cover; filter: contrast(1.03) saturate(.86); }
+.bk-cart-head b {
+  display: block;
+  font: 800 1.05rem/1.1 var(--bk-display);
+  text-transform: uppercase;
+}
+.bk-cart-head span { display: block; margin-top: 4px; color: var(--bk-muted); font-size: .78rem; }
+
+.bk-cart-items { display: grid; gap: 14px; padding: 18px 0; }
+
+.bk-cart-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+}
+
+.bk-cart-name { font-weight: 600; font-size: .92rem; }
+.bk-cart-price { font: 800 .98rem/1.3 var(--bk-display); }
+.bk-cart-dur {
+  grid-column: 1 / -1;
+  color: var(--bk-muted);
+  font-size: .74rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.bk-cart-vuoto { margin: 0; color: var(--bk-muted); font-size: .88rem; }
+
+.bk-cart-quando {
+  padding: 14px 0;
+  border-top: 1px solid var(--bk-line);
+  color: var(--bk-steel);
+  font-size: .86rem;
+}
+
+.bk-cart-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bk-line);
+}
+
+.bk-cart-total span {
+  font: 800 .74rem/1 var(--bk-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--bk-muted);
+}
+
+.bk-cart-total b { font: 800 1.6rem/1 var(--bk-display); }
+
+.bk-cart-dur-tot {
+  margin-top: 6px;
+  color: var(--bk-muted);
+  font-size: .74rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.bk-cart-cta { width: 100%; margin-top: 20px; }
 
 /* ---------------------------------------------------------- piede fisso */
 
@@ -494,5 +764,5 @@ body.bk-locked { overflow: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bk-progress span, .bk-choice, .bk-cta { transition: none; }
+  .bk-choice, .bk-card, .bk-pill, .bk-cta { transition: none; }
 }

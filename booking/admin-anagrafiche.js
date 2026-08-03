@@ -231,6 +231,7 @@
         return '<h3 style="margin:22px 0 8px;font-size:.8rem;letter-spacing:.16em;color:var(--steel)">' + CAT[c] + '</h3>' +
           '<table><tbody>' + list.map(function (s) {
             return '<tr><td><strong>' + esc(s.nome) + '</strong>' + (s.attivo ? '' : ' <span class="pill">off</span>') +
+              (s.evidenza ? ' <span class="pill">in evidenza ' + s.evidenza + '</span>' : '') +
               '<br><span class="muted">' + esc(s.descrizione || '') + '</span></td>' +
               '<td class="num" style="width:90px">' + E.durataLabel(s.durata) + '</td>' +
               '<td class="num" style="width:110px">' + E.euro(s.prezzo) +
@@ -275,6 +276,8 @@
       '</div>' +
       '<label class="f"><span>Prezzo pieno — solo combo, per il badge risparmio</span>' +
         '<input type="number" name="pieno" value="' + (s.prezzoPieno || '') + '" min="0" step="0.5"></label>' +
+      '<label class="f"><span>In evidenza — posizione nella prima schermata, vuoto = non in evidenza</span>' +
+        '<input type="number" name="evidenza" value="' + (s.evidenza || '') + '" min="1"></label>' +
       '<label style="display:flex;gap:9px;align-items:center;margin-bottom:16px;cursor:pointer">' +
         '<input type="checkbox" name="attivo"' + (s.attivo ? ' checked' : '') + ' style="width:18px;height:18px;margin:0">' +
         '<span>Attivo (visibile online)</span></label>' +
@@ -283,6 +286,7 @@
       function (box) {
         box.querySelector('[data-salva]').addEventListener('click', function () {
           var pieno = Number(box.querySelector('[name=pieno]').value);
+          var evid = Number(box.querySelector('[name=evidenza]').value);
           E.upsert('services', {
             id: id || undefined,
             nome: box.querySelector('[name=nome]').value.trim() || 'Servizio',
@@ -291,6 +295,7 @@
             durata: Math.max(5, Number(box.querySelector('[name=durata]').value) || 30),
             prezzo: Number(box.querySelector('[name=prezzo]').value) || 0,
             prezzoPieno: pieno > 0 ? pieno : undefined,
+            evidenza: evid > 0 ? evid : undefined,
             ordine: Number(box.querySelector('[name=ordine]').value) || 1,
             attivo: box.querySelector('[name=attivo]').checked
           });
