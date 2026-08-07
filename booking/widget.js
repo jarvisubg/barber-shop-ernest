@@ -43,7 +43,7 @@
     return {
       vista: 'prenota',        // 'prenota' | 'gestisci'
       step: 0,
-      catAttiva: 'evidenza',   // pill aperta nel listino
+      catAttiva: 'tutti',      // 'tutti' = listino intero, evidenza in cima
       serviziIds: [],
       barberId: undefined,     // undefined = non scelto, null = primo disponibile
       dataKey: null,

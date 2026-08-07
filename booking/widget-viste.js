@@ -70,27 +70,47 @@
           '</span></button>';
       }
 
+      function gruppo(titolo, lista) {
+        return '<h3 class="bk-group-title">' + esc(titolo) + '</h3>' +
+          '<div class="bk-cards">' + lista.map(cardServizio).join('') + '</div>';
+      }
+
       function vistaServizi() {
         sync();
         var attivi = E.db.services.filter(function (s) { return s.attivo; });
 
         // una pill che non ha servizi dietro è una via chiusa: non si mostra
         var disponibili = CATEGORIE.filter(function (c) { return inCategoria(attivi, c[0]).length; });
-        if (!disponibili.some(function (c) { return c[0] === S.catAttiva; }) && disponibili.length) {
-          S.catAttiva = disponibili[0][0];
+        // se il gestionale svuota la categoria aperta si torna al listino intero,
+        // invece di lasciare a video una schermata senza servizi
+        if (S.catAttiva !== 'tutti' && !disponibili.some(function (c) { return c[0] === S.catAttiva; })) {
+          S.catAttiva = 'tutti';
         }
 
-        var pills = disponibili.map(function (c) {
+        var pills = [['tutti', 'Tutti']].concat(disponibili).map(function (c) {
           return '<button class="bk-pill" type="button" data-act="categoria" data-cat="' + c[0] + '"' +
             ' aria-pressed="' + (S.catAttiva === c[0]) + '">' + c[1] + '</button>';
         }).join('');
 
-        var lista = inCategoria(attivi, S.catAttiva);
-        var titolo = (disponibili.filter(function (c) { return c[0] === S.catAttiva; })[0] || ['', ''])[1];
+        var corpo;
+        if (S.catAttiva === 'tutti') {
+          /* Listino intero, "In evidenza" in cima. I servizi già in vetrina non
+             si ripetono sotto la loro categoria: due card identiche nella stessa
+             schermata sembrano due servizi diversi. Filtrando una categoria
+             invece si mostra tutta, evidenza compresa. */
+          var inVetrina = inCategoria(attivi, 'evidenza');
+          corpo = disponibili.map(function (c) {
+            var lista = c[0] === 'evidenza'
+              ? inVetrina
+              : inCategoria(attivi, c[0]).filter(function (s) { return !s.evidenza; });
+            return lista.length ? gruppo(c[1], lista) : '';
+          }).join('');
+        } else {
+          var cat = disponibili.filter(function (c) { return c[0] === S.catAttiva; })[0];
+          corpo = gruppo(cat[1], inCategoria(attivi, cat[0]));
+        }
 
-        return '<div class="bk-pills">' + pills + '</div>' +
-          '<h3 class="bk-group-title">' + esc(titolo) + '</h3>' +
-          '<div class="bk-cards">' + lista.map(cardServizio).join('') + '</div>' +
+        return '<div class="bk-pills">' + pills + '</div>' + corpo +
           '<button class="bk-link" type="button" data-act="gestisci">Ho già una prenotazione — gestiscila</button>';
       }
 
