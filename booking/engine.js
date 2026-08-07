@@ -1,13 +1,31 @@
 /* Barber Shop Ernest — motore prenotazioni.
-   Nessuna dipendenza, nessun build step. Persistenza su localStorage.
-   ponytail: localStorage al posto di Supabase — demo apribile offline con doppio click.
-   In produzione questo file diventa il layer RPC (get_available_slots / create_booking /
-   cancel_booking) descritto in barber-ernest-booking-prompt.md: la firma delle funzioni
-   pubbliche qui sotto è già quella, cambia solo il corpo. */
+   Nessuna dipendenza, nessun build step.
+
+   Lo stesso file gira in due posti:
+
+   - nel BROWSER (modo 'client'): tiene una copia dello stato in memoria per
+     disegnare listino, calendario e slot liberi senza andare in rete a ogni
+     click. Le SCRITTURE non toccano quella copia: vanno al server e tornano
+     con lo stato aggiornato. Il browser non è mai la fonte di verità.
+   - nel WORKER (modo 'server'): è la fonte di verità. Le stesse funzioni di
+     dominio validano davvero la prenotazione prima di scriverla.
+
+   Il motivo per cui è un file solo: orari, buffer, listino e limiti sono
+   regole di business. Se vivessero in due copie, prima o poi divergerebbero e
+   il cliente vedrebbe uno slot che il server rifiuta.
+
+   Storia: fino al 2026-08-03 la persistenza era su localStorage. Funzionava
+   solo finché chi prenotava e chi guardava l'agenda erano lo stesso browser —
+   cioè mai, in produzione: le prenotazioni dei clienti non sono mai arrivate
+   al negozio. Non reintrodurre localStorage come fonte di verità. */
 (function (global, T, SEED) {
   'use strict';
 
-  var STORE_KEY = 'ernest-booking-v3';
+  /* Cache di sola lettura dell'ultimo stato ricevuto dal server. Serve a una
+     cosa sola: se in negozio salta la linea, l'agenda di oggi resta leggibile
+     invece di mostrare una pagina vuota. Non ci si scrive mai sopra una
+     prenotazione nuova. */
+  var CACHE_KEY = 'ernest-cache-v1';
 
   /* helper di data/ora e formato: vivono in tempo.js */
   var pad = T.pad, dayKey = T.dayKey, toMin = T.toMin, toHHMM = T.toHHMM, at = T.at,
@@ -18,6 +36,13 @@
   /* ---------------------------------------------------------------- store */
 
   var db = null;
+  var cfg = {
+    modo: 'client',      // 'client' nel browser, 'server' dentro il Worker
+    api: '',             // base URL del Worker, in modo client
+    token: null,         // token di sessione del gestionale
+    persisti: null,      // callback di salvataggio, in modo server
+    daCache: false       // true se lo stato mostrato viene dalla cache offline
+  };
 
   function vuoto() {
     return {
@@ -28,7 +53,8 @@
       closures: [],
       bookings: [],
       settings: JSON.parse(JSON.stringify(SEED.SETTINGS)),
-      seedDay: null
+      schema: 2,
+      listinoVersione: SEED.LISTINO_VERSIONE
     };
   }
 
@@ -39,16 +65,25 @@
 
   function save() {
     if (salvataggioSospeso) return;
-    try { global.localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
-    catch (e) { /* modalità privata o quota piena: si resta in memoria */ }
+    if (cfg.modo === 'server') { if (cfg.persisti) cfg.persisti(db); return; }
+    /* In modo client non si salva niente di autorevole: si aggiorna solo la
+       copia di lettura per sopravvivere a un buco di rete. */
+    scriviCache();
   }
 
-  function load() {
+  function scriviCache() {
     try {
-      var raw = global.localStorage.getItem(STORE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) { /* ignore */ }
-    return null;
+      global.localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), db: db }));
+    } catch (e) { /* modalità privata o quota piena: si resta in memoria */ }
+  }
+
+  function leggiCache() {
+    try {
+      var raw = global.localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      var box = JSON.parse(raw);
+      return box && box.db ? box.db : null;
+    } catch (e) { return null; }
   }
 
   function byId(list, id) {
@@ -146,8 +181,8 @@
     };
   }
 
-  /* Stesse regole applicate dal widget e ri-applicate qui prima di scrivere:
-     il client non è una fonte affidabile. */
+  /* Stesse regole applicate dal widget e ri-applicate dal server prima di
+     scrivere: il client non è una fonte affidabile. */
   function validaSelezione(ids) {
     var list = servizi(ids);
     if (!list.length) return 'Seleziona almeno un servizio.';
@@ -180,7 +215,11 @@
     return /^\+\d{9,14}$/.test(normalizzaTelefono(raw));
   }
 
-  /* ------------------------------------------------------------ scrittura */
+  /* ------------------------------------------------------------ scrittura
+
+     Da qui in giù sono le funzioni di dominio vere. Nel browser NON vengono
+     chiamate per modificare i dati: le chiama il Worker. Restano esposte in
+     API.locale perché il Worker e le verifiche automatiche le usano dirette. */
 
   function generaCodice() {
     for (var i = 0; i < 200; i++) {
@@ -222,7 +261,7 @@
 
   /* Crea una prenotazione. Ricalcola SEMPRE durata e prezzo dal listino:
      i valori che arrivano dal client non vengono mai usati. */
-  function creaPrenotazione(p) {
+  function creaPrenotazioneLocale(p) {
     var errore = validaSelezione(p.serviziIds);
     if (errore) return { ok: false, error: errore };
 
@@ -315,7 +354,7 @@
 
   /* Modifica dal gestionale. Conserva id e codice: il cliente ha già il suo
      riferimento, cambiarlo lo lascerebbe con un codice morto in mano. */
-  function aggiornaPrenotazione(id, patch) {
+  function aggiornaPrenotazioneLocale(id, patch) {
     var b = byId(db.bookings, id);
     if (!b) return { ok: false, error: 'Prenotazione non trovata.' };
 
@@ -363,7 +402,7 @@
 
   /* Cancellazione pubblica. Risposta identica per codice inesistente e telefono
      sbagliato: non si rivela quale dei due è errato. */
-  function cancellaConCodice(codice, telefono) {
+  function cancellaConCodiceLocale(codice, telefono) {
     var c = String(codice || '').trim().toUpperCase();
     var t = normalizzaTelefono(telefono);
     var b = db.bookings.filter(function (x) {
@@ -382,63 +421,13 @@
     return { ok: true, booking: b };
   }
 
-  function cercaConCodice(codice, telefono) {
+  function cercaConCodiceLocale(codice, telefono) {
     var c = String(codice || '').trim().toUpperCase();
     var t = normalizzaTelefono(telefono);
     return db.bookings.filter(function (x) { return x.codice === c && x.telefono === t; })[0] || null;
   }
 
-  /* Dati dimostrativi: la ricetta sta in seed.js, qui resta solo il salvataggio. */
-  function popolaDemo() {
-    var creati = SEED.popola(API);
-    save();
-    return creati;
-  }
-
-  function init() {
-    db = load() || vuoto();
-    // compatibilità in avanti se lo schema cresce
-    Object.keys(SEED.SETTINGS).forEach(function (k) {
-      if (db.settings[k] === undefined) db.settings[k] = SEED.SETTINGS[k];
-    });
-    /* Il buffer di default era 5 minuti. Applicato su entrambi i lati e
-       arrotondato alla griglia da 15, un appuntamento da 30 minuti ne occupava
-       75. Chi ha già i dati sul browser va portato al nuovo default una volta
-       sola: il ciclo qui sopra riempie solo le chiavi mancanti. */
-    if (db.schema !== 2) {
-      if (db.settings.buffer === 5) db.settings.buffer = 0;
-      db.schema = 2;
-      save();
-    }
-    /* Il listino vive dentro il database salvato sul browser, non viene riletto
-       dal seed a ogni avvio: senza questo, chi ha già aperto il sito resterebbe
-       sui vecchi prezzi e sulle vecchie durate per sempre.
-       Si aggiornano solo le voci nostre, riconosciute per id: i servizi che il
-       negozio ha aggiunto dal gestionale non si toccano. Alzare invece la
-       versione della chiave qui sopra cancellerebbe anche le prenotazioni. */
-    if (db.listinoVersione !== SEED.LISTINO_VERSIONE) {
-      SEED.SERVIZI.forEach(function (s) {
-        var esistente = byId(db.services, s.id);
-        if (esistente) Object.keys(s).forEach(function (k) { esistente[k] = s[k]; });
-        else db.services.push(JSON.parse(JSON.stringify(s)));
-      });
-      db.listinoVersione = SEED.LISTINO_VERSIONE;
-      save();
-    }
-
-    if (db.seedDay !== dayKey(new Date())) popolaDemo();
-    return db;
-  }
-
-  function reset() {
-    db = vuoto();
-    popolaDemo();
-    return db;
-  }
-
-  /* --------------------------------------------------------------- admin */
-
-  function upsert(coll, rec) {
+  function upsertLocale(coll, rec) {
     var esistente = rec.id ? byId(db[coll], rec.id) : null;
     if (esistente) Object.keys(rec).forEach(function (k) { esistente[k] = rec[k]; });
     else { rec.id = rec.id || uid(); db[coll].push(rec); }
@@ -446,15 +435,138 @@
     return rec;
   }
 
-  function rimuovi(coll, id) {
+  function rimuoviLocale(coll, id) {
     db[coll] = db[coll].filter(function (x) { return x.id !== id; });
     save();
   }
 
-  function cambiaStato(id, stato) {
+  function cambiaStatoLocale(id, stato) {
     var b = byId(db.bookings, id);
     if (b) { b.stato = stato; save(); }
     return b;
+  }
+
+  /* Dati dimostrativi: la ricetta sta in seed.js. Girano solo su richiesta
+     esplicita — in produzione mai. Prima riempivano l'agenda del negozio di
+     clienti inventati che occupavano slot veri. */
+  function popolaDemo() {
+    var creati = SEED.popola(API);
+    save();
+    return creati;
+  }
+
+  /* --------------------------------------------------- migrazioni schema */
+
+  /* Applicate dal server sullo stato salvato, non da ogni browser. */
+  function migra(stato) {
+    Object.keys(SEED.SETTINGS).forEach(function (k) {
+      if (stato.settings[k] === undefined) stato.settings[k] = SEED.SETTINGS[k];
+    });
+    /* Il buffer di default era 5 minuti. Applicato su entrambi i lati e
+       arrotondato alla griglia da 15, un appuntamento da 30 minuti ne occupava
+       75. Il ciclo qui sopra riempie solo le chiavi mancanti, non i valori. */
+    if (stato.schema !== 2) {
+      if (stato.settings.buffer === 5) stato.settings.buffer = 0;
+      stato.schema = 2;
+    }
+    /* Il listino vive dentro lo stato salvato, non viene riletto dal seed a
+       ogni avvio: altrimenti il negozio non potrebbe mai cambiare un prezzo dal
+       gestionale. Si aggiornano solo le voci nostre, riconosciute per id: i
+       servizi aggiunti dal negozio non si toccano. */
+    if (stato.listinoVersione !== SEED.LISTINO_VERSIONE) {
+      SEED.SERVIZI.forEach(function (s) {
+        var esistente = byId(stato.services, s.id);
+        if (esistente) Object.keys(s).forEach(function (k) { esistente[k] = s[k]; });
+        else stato.services.push(JSON.parse(JSON.stringify(s)));
+      });
+      stato.listinoVersione = SEED.LISTINO_VERSIONE;
+    }
+    /* La password non sta più nel bundle pubblico: è un secret del Worker.
+       Se restasse qui, chiunque aprisse il sorgente della pagina entrerebbe
+       nel gestionale. */
+    delete stato.settings.adminPassword;
+    return stato;
+  }
+
+  /* ------------------------------------------------------------ trasporto
+
+     Solo in modo client. Ogni scrittura è una chiamata al Worker, che risponde
+     con lo stato aggiornato: nessuna riconciliazione da fare a mano. */
+
+  function Errore(messaggio, rete) {
+    var e = new Error(messaggio);
+    e.diRete = !!rete;
+    return e;
+  }
+
+  function chiama(metodo, percorso, corpo) {
+    if (!cfg.api) {
+      return Promise.reject(Errore('Sistema di prenotazione non configurato.', true));
+    }
+    var opt = {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (cfg.token) opt.headers['Authorization'] = 'Bearer ' + cfg.token;
+    if (corpo !== undefined) opt.body = JSON.stringify(corpo);
+
+    return global.fetch(cfg.api + percorso, opt).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (dati) {
+        if (dati && dati.stato) { db = dati.stato; cfg.daCache = false; scriviCache(); }
+        /* Un rifiuto del motore ("slot occupato", "telefono non valido") porta
+           sempre un ok:false ed è un esito normale da mostrare in pagina.
+           Tutto il resto — auth, rete, guasti — è un'eccezione. */
+        if (!r.ok && dati.ok === undefined) {
+          if (r.status === 401 && cfg.token) {
+            cfg.token = null;
+            throw Errore('Sessione scaduta: rientra nel gestionale.');
+          }
+          throw Errore(dati.error || 'Il server non risponde. Riprova fra un momento.',
+            r.status >= 500);
+        }
+        return dati;
+      });
+    }, function () {
+      throw Errore('Nessuna connessione. Controlla la rete e riprova.', true);
+    });
+  }
+
+  /* ------------------------------------------------------------- avvio */
+
+  /* Modo server: lo stato arriva dal Durable Object, che lo tiene su disco. */
+  function avviaServer(stato, persisti) {
+    cfg.modo = 'server';
+    cfg.persisti = persisti;
+    db = migra(stato || vuoto());
+    return db;
+  }
+
+  /* Modo client: si chiede lo stato al server. Se la rete non c'è si riparte
+     dall'ultima copia nota, marcata come tale perché la UI possa avvisare che
+     i dati potrebbero non essere aggiornati. */
+  function avviaClient(opzioni) {
+    cfg.modo = 'client';
+    cfg.api = (opzioni && opzioni.api) || '';
+    cfg.token = (opzioni && opzioni.token) || null;
+
+    return chiama('GET', '/api/stato').then(function () {
+      return { ok: true, daCache: false };
+    }, function (e) {
+      /* La copia offline rimedia a un buco di rete, non a un rifiuto del
+         server: con una sessione scaduta mostrerebbe un'agenda vecchia a chi
+         non ha più il diritto di vederla. */
+      var salvato = e.diRete ? leggiCache() : null;
+      if (!salvato) { db = vuoto(); throw e; }
+      db = salvato;
+      cfg.daCache = true;
+      return { ok: false, daCache: true, errore: e.message };
+    });
+  }
+
+  function reset() {
+    db = vuoto();
+    save();
+    return db;
   }
 
   function prenotazioniDel(key) {
@@ -473,11 +585,18 @@
   /* --------------------------------------------------------------- export */
 
   var API = {
-    init: init,
+    avviaClient: avviaClient,
+    avviaServer: avviaServer,
     reset: reset,
     popolaDemo: popolaDemo,
+    migra: migra,
+    vuoto: vuoto,
+    /* Salvataggio esplicito, per le modifiche che non passano da una funzione
+       di dominio (le impostazioni si scrivono in blocco). Solo in modo server. */
+    forzaSalvataggio: save,
     get db() { return db; },
-    save: save,
+    get daCache() { return cfg.daCache; },
+    get autenticato() { return !!cfg.token; },
     byId: byId,
 
     // tempo
@@ -486,35 +605,104 @@
     overlaps: overlaps, labelData: labelData, euro: euro, durataLabel: durataLabel,
     GIORNI: GIORNI, MESI: MESI, uid: uid,
 
-    // dominio
+    // letture: sincrone, servono a disegnare la UI senza andare in rete
     slotsFor: slotsFor, totali: totali, servizi: servizi, validaSelezione: validaSelezione,
-    creaPrenotazione: creaPrenotazione, aggiornaPrenotazione: aggiornaPrenotazione,
-    cancellaConCodice: cancellaConCodice,
-    cercaConCodice: cercaConCodice, slotLibero: slotLibero, dentroOrario: dentroOrario,
+    slotLibero: slotLibero, dentroOrario: dentroOrario,
     normalizzaTelefono: normalizzaTelefono, telefonoValido: telefonoValido,
+    prenotazioniDel: prenotazioniDel, prenotazioniFuture: prenotazioniFuture,
 
-    // admin
-    upsert: upsert, rimuovi: rimuovi, cambiaStato: cambiaStato,
-    prenotazioniDel: prenotazioniDel, prenotazioniFuture: prenotazioniFuture
+    /* Logica di dominio sincrona. La usa il Worker, che è l'unico autorizzato
+       a scrivere, e le verifiche automatiche. Nel browser non va chiamata:
+       modificherebbe solo la copia locale, che è esattamente il difetto per cui
+       le prenotazioni non arrivavano al negozio. */
+    locale: {
+      creaPrenotazione: creaPrenotazioneLocale,
+      aggiornaPrenotazione: aggiornaPrenotazioneLocale,
+      cancellaConCodice: cancellaConCodiceLocale,
+      cercaConCodice: cercaConCodiceLocale,
+      upsert: upsertLocale,
+      rimuovi: rimuoviLocale,
+      cambiaStato: cambiaStatoLocale
+    }
   };
+
+  /* ------------------------------------------------- scritture (client) */
+
+  /* Tutte ritornano una Promise e risolvono con la stessa forma di prima
+     ({ ok, booking, error }), così i punti di chiamata cambiano solo di un
+     .then invece di essere riscritti. */
+
+  API.aggiorna = function () { return chiama('GET', '/api/stato'); };
+
+  API.creaPrenotazione = function (p) {
+    return chiama('POST', '/api/prenotazioni', p);
+  };
+
+  API.aggiornaPrenotazione = function (id, patch) {
+    return chiama('PATCH', '/api/prenotazioni/' + encodeURIComponent(id), patch);
+  };
+
+  API.cancellaConCodice = function (codice, telefono) {
+    return chiama('POST', '/api/disdetta', { codice: codice, telefono: telefono });
+  };
+
+  API.cercaConCodice = function (codice, telefono) {
+    return chiama('POST', '/api/cerca', { codice: codice, telefono: telefono })
+      .then(function (r) { return r.booking || null; });
+  };
+
+  API.cambiaStato = function (id, stato) {
+    return chiama('PATCH', '/api/prenotazioni/' + encodeURIComponent(id) + '/stato', { stato: stato });
+  };
+
+  API.upsert = function (coll, rec) {
+    return chiama('PUT', '/api/dati/' + encodeURIComponent(coll), rec);
+  };
+
+  API.rimuovi = function (coll, id) {
+    return chiama('DELETE', '/api/dati/' + encodeURIComponent(coll) + '/' + encodeURIComponent(id));
+  };
+
+  /* Il gestionale salva le impostazioni in blocco (orari, telefono, limiti). */
+  API.salvaImpostazioni = function (settings) {
+    return chiama('PUT', '/api/impostazioni', settings);
+  };
+
+  API.login = function (password) {
+    return chiama('POST', '/api/login', { password: password }).then(function (r) {
+      if (!r.token) return r;
+      cfg.token = r.token;
+      /* Lo stato in memoria è ancora quello pubblico, caricato prima di
+         autenticarsi: delle prenotazioni ha solo le fasce occupate, senza nomi.
+         Va riletto con il token, o il gestionale mostra un'agenda mutilata. */
+      return API.aggiorna().then(function () { return r; });
+    });
+  };
+
+  API.usaToken = function (t) { cfg.token = t || null; };
+  API.esci = function () { cfg.token = null; };
 
   /* Esegue fn su un database vuoto e usa e getta: nessuna scrittura su disco,
      stato reale ripristinato in ogni caso. Lo usa selfcheck.js. */
   API.ambienteDiProva = function (fn) {
     var backup = JSON.stringify(db);
+    var modoPrec = cfg.modo;
     salvataggioSospeso = true;
+    cfg.modo = 'server';           // le funzioni locali non devono uscire in rete
     try {
       db = vuoto();
       return fn(db);
     } finally {
       db = JSON.parse(backup);
+      cfg.modo = modoPrec;
       salvataggioSospeso = false;
-      save();
     }
   };
 
   global.ErnestBooking = API;
-  init();
+
+  /* Niente avvio automatico: chi usa il motore decide quando e come.
+     Nel browser l'avvio è asincrono perché lo stato arriva dalla rete. */
 
 })(typeof window !== 'undefined' ? window : globalThis,
    (typeof window !== 'undefined' ? window : globalThis).ErnestTempo,

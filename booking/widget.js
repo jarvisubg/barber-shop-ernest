@@ -30,6 +30,15 @@
   var S = null;
   var overlay, elBody, elFoot, elCrumbs, elTitolo, elH, elCart;
 
+  var CFG = global.ErnestConfig || {};
+  /* Recapito di riserva: serve proprio quando lo stato del negozio non è
+     arrivato, quindi non può venire da lì. */
+  var TELEFONO = CFG.telefono || '+393280774789';
+  var TELEFONO_LABEL = CFG.telefonoLabel || '328 077 4789';
+
+  var statoPronto = false;
+  var connessione = null;
+
   function nuovoStato() {
     return {
       vista: 'prenota',        // 'prenota' | 'gestisci'
@@ -121,12 +130,55 @@
     });
   }
 
+  /* Lo stato (listino, orari, slot occupati) arriva dal server. Finché non è
+     arrivato non si può disegnare niente di sensato: mostrare un listino a
+     memoria e poi scoprire che l'orario non esiste è peggio di aspettare
+     mezzo secondo. */
   function apri(vista) {
     S = nuovoStato();
     if (vista) S.vista = vista;
     overlay.dataset.open = 'true';
     document.body.classList.add('bk-locked');
-    render();
+
+    if (statoPronto) return render();
+
+    mostraAttesa();
+    connessione.then(function () {
+      statoPronto = true;
+      if (overlay.dataset.open === 'true') render();
+    }, function (e) {
+      if (overlay.dataset.open === 'true') mostraGuasto(e && e.message);
+    });
+  }
+
+  function mostraAttesa() {
+    elTitolo.textContent = 'Un momento…';
+    elCrumbs.innerHTML = '';
+    overlay.dataset.cart = 'false';
+    elH.textContent = 'Carico gli orari disponibili.';
+    elBody.innerHTML = '<p class="bk-sub">Sto controllando le disponibilità aggiornate del negozio.</p>';
+    elFoot.innerHTML = '';
+  }
+
+  /* Se il server non risponde non si finge che la prenotazione sia possibile:
+     il cliente riceve subito il numero del negozio. Un appuntamento preso e
+     mai arrivato costa molto più di un flusso interrotto. */
+  function mostraGuasto(messaggio) {
+    var tel = TELEFONO, telLabel = TELEFONO_LABEL;
+    elTitolo.textContent = 'Prenotazione non disponibile';
+    elCrumbs.innerHTML = '';
+    overlay.dataset.cart = 'false';
+    elH.textContent = 'Chiamaci, facciamo prima.';
+    elBody.innerHTML =
+      '<p class="bk-error">' + esc(messaggio || 'Il sistema di prenotazione non risponde.') + '</p>' +
+      '<p class="bk-sub">Non riesco a raggiungere l\'agenda del negozio, quindi non posso confermarti ' +
+        'nessun orario. Chiamaci o scrivici: rispondiamo noi.</p>' +
+      '<div class="bk-actions">' +
+        '<a href="tel:' + tel + '">Chiama ' + esc(telLabel) + '</a>' +
+        '<a href="https://wa.me/' + tel.replace('+', '') +
+          '" target="_blank" rel="noopener">Scrivi su WhatsApp</a>' +
+      '</div>';
+    elFoot.innerHTML = '';
   }
 
   function chiudi() {
@@ -368,7 +420,11 @@
     var cta = overlay.querySelectorAll('.bk-cta[data-act="avanti"]');
     Array.prototype.forEach.call(cta, function (b) { b.disabled = true; b.textContent = 'Invio…'; });
 
-    var res = E.creaPrenotazione({
+    /* La prenotazione la scrive il server, che rivalida tutto: è lui a dire se
+       lo slot è ancora libero. Il "Confermato" appare solo dopo la sua
+       risposta — mai prima, o si torna al difetto per cui il cliente aveva un
+       codice e il negozio non aveva niente. */
+    E.creaPrenotazione({
       serviziIds: S.serviziIds,
       nome: S.nome, cognome: S.cognome, telefono: S.telefono,
       barberId: S.barberAssegnato || S.barberId || null,
@@ -377,19 +433,28 @@
       note: S.note,
       consenso: S.consenso,
       origine: 'online'
+    }).then(function (res) {
+      if (!res.ok) {
+        S.errore = res.error;
+        // se lo slot è saltato, si torna alla scelta dell'orario
+        if (/orario/.test(res.error || '')) { S.ora = null; S.step = STEPS.indexOf('ora'); }
+        return render();
+      }
+
+      S.booking = res.booking;
+      S.errore = null;
+      S.step = STEPS.indexOf('fatto');
+      render();
+    }, function (e) {
+      /* Caduta di rete a metà conferma: non si può sapere se la prenotazione è
+         passata o no. Dirlo, invece di far ritentare alla cieca e rischiare il
+         doppione. */
+      S.errore = e.diRete
+        ? e.message + ' Se hai già toccato Conferma una volta, controlla con "Gestisci prenotazione" ' +
+          'prima di riprovare, oppure chiamaci al ' + TELEFONO_LABEL + '.'
+        : e.message;
+      render();
     });
-
-    if (!res.ok) {
-      S.errore = res.error;
-      // se lo slot è saltato, si torna alla scelta dell'orario
-      if (/orario/.test(res.error)) { S.ora = null; S.step = STEPS.indexOf('ora'); }
-      return render();
-    }
-
-    S.booking = res.booking;
-    S.errore = null;
-    S.step = STEPS.indexOf('fatto');
-    render();
   }
 
   function copiaCodice(btn) {
@@ -442,6 +507,16 @@
       corpo = '<div class="bk-code"><b>Disdetta</b><small>Prenotazione ' + esito.codice + ' annullata</small></div>' +
         '<p class="bk-sub">L\'orario è tornato libero. Se cambi idea puoi prenotare di nuovo.</p>' +
         '<button class="bk-cta bk-cta-ghost" type="button" data-act="prenota">Prenota di nuovo</button>';
+    } else if (esito && esito.tipo === 'guasto') {
+      corpo = '<p class="bk-error">' + esc(esito.messaggio) + '</p>' +
+        '<p class="bk-sub">Il tuo appuntamento resta valido: non è stato disdetto niente. ' +
+        'Se devi annullare, chiamaci.</p>' +
+        '<div class="bk-actions">' +
+          '<a href="tel:' + TELEFONO + '">Chiama ' + esc(TELEFONO_LABEL) + '</a>' +
+          '<a href="https://wa.me/' + TELEFONO.replace('+', '') +
+            '" target="_blank" rel="noopener">Scrivi su WhatsApp</a>' +
+        '</div>' +
+        '<button class="bk-link" type="button" data-act="gestisci">Riprova</button>';
     } else if (esito && esito.tipo === 'troppo_tardi') {
       var tel = E.db.settings.telefono;
       corpo = '<p class="bk-error">Mancano meno di ' + esito.ore + ' ore al tuo appuntamento. ' +
@@ -487,23 +562,34 @@
   }
 
   function cercaPrenotazione() {
-    var b = E.cercaConCodice(S.codice, S.telefono);
-    S.trovata = b;
-    S.esitoGestione = b ? null : { tipo: 'non_trovata' };
-    renderGestisci();
+    E.cercaConCodice(S.codice, S.telefono).then(function (b) {
+      S.trovata = b;
+      S.esitoGestione = b ? null : { tipo: 'non_trovata' };
+      renderGestisci();
+    }, function (e) {
+      S.trovata = null;
+      S.esitoGestione = { tipo: 'guasto', messaggio: e.message };
+      renderGestisci();
+    });
   }
 
   function annullaPrenotazione() {
-    var res = E.cancellaConCodice(S.codice, S.telefono);
-    if (res.ok) {
-      S.esitoGestione = { tipo: 'cancellata', codice: res.booking.codice };
-    } else if (res.motivo === 'troppo_tardi') {
-      S.esitoGestione = { tipo: 'troppo_tardi', ore: res.ore, codice: res.booking.codice };
-    } else {
-      S.esitoGestione = { tipo: 'non_trovata' };
-    }
-    S.trovata = null;
-    renderGestisci();
+    E.cancellaConCodice(S.codice, S.telefono).then(function (res) {
+      if (res.ok) {
+        S.esitoGestione = { tipo: 'cancellata', codice: res.booking.codice };
+      } else if (res.motivo === 'troppo_tardi') {
+        S.esitoGestione = { tipo: 'troppo_tardi', ore: res.ore, codice: res.booking.codice };
+      } else {
+        S.esitoGestione = { tipo: 'non_trovata' };
+      }
+      S.trovata = null;
+      renderGestisci();
+    }, function (e) {
+      /* Disdetta non riuscita: il cliente deve sapere che l'appuntamento è
+         ancora in piedi, altrimenti semplicemente non si presenta. */
+      S.esitoGestione = { tipo: 'guasto', messaggio: e.message };
+      renderGestisci();
+    });
   }
 
   /* ------------------------------------------------------------- innesto */
@@ -523,6 +609,16 @@
   function avvia() {
     costruisci();
     montaIngresso();
+
+    /* Si parte subito, senza aspettare un click: quando il cliente apre il
+       riquadro lo stato è quasi sempre già lì.
+       La copia in cache va bene per leggere, non per prenotare: se siamo
+       offline la conferma fallirebbe comunque, meglio dirlo subito. */
+    connessione = E.avviaClient({ api: CFG.api }).then(function (esito) {
+      if (esito.daCache) throw new Error('Il sistema di prenotazione non risponde.');
+      return esito;
+    });
+    connessione.then(function () { statoPronto = true; }, function () { /* gestito all'apertura */ });
 
     document.addEventListener('click', function (ev) {
       if (ev.target.closest('[data-booking-trigger]')) { ev.preventDefault(); apri('prenota'); }

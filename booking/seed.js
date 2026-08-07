@@ -71,8 +71,11 @@
     giorniAvanti: 30,
     maxPrenotazioniAttive: 3,
     telefono: '+393280774789',
-    telefonoLabel: '328 077 4789',
-    adminPassword: 'ernest2026' // ponytail: gate da demo. In produzione è Supabase Auth, non una stringa nel bundle.
+    telefonoLabel: '328 077 4789'
+    /* La password del gestionale NON sta qui. Questo file finisce nel bundle
+       pubblico: chiunque aprisse il sorgente della pagina la leggerebbe.
+       Vive come secret del Worker (ERNEST_ADMIN_PASSWORD) e non lascia mai il
+       server — vedi server/README.md. */
   };
 
   var NOMI = [
@@ -91,7 +94,12 @@
 
   /* Popola le prenotazioni dimostrative usando le stesse funzioni del motore,
      così i dati di prova rispettano orari, buffer e chiusure come quelli veri.
-     Tocca solo i record marcati seed: ciò che l'utente crea testando resta. */
+     Tocca solo i record marcati seed: ciò che l'utente crea testando resta.
+
+     ATTENZIONE — questo non deve girare in produzione, e infatti non gira più
+     da solo: si chiama solo a mano dal Worker in ambiente di prova.
+     Prima veniva eseguito a ogni cambio di giorno su ogni browser: il negozio
+     si trovava l'agenda piena di clienti inventati che occupavano slot veri. */
   function popola(api) {
     var db = api.db, oggi = new Date();
 
@@ -128,7 +136,7 @@
 
       // due prenotazioni consecutive senza buco: la prima del giorno e quella subito dopo
       var scelto = liberi[Math.min(creati % 5 === 0 ? 0 : 2 + (creati % 6), liberi.length - 1)];
-      var res = api.creaPrenotazione({
+      var res = api.locale.creaPrenotazione({
         serviziIds: ric,
         nome: NOMI[creati][0], cognome: NOMI[creati][1],
         telefono: '+3933' + String(1000000 + creati * 7919).slice(0, 7),
@@ -143,7 +151,6 @@
       if (res.ok) creati++;
     }
 
-    db.seedDay = T.dayKey(oggi);
     return creati;
   }
 

@@ -43,9 +43,14 @@
             var a = btn.dataset.a;
             if (a === 'modifica') { chiudiModale(); return formPrenotazione(b.id, {}); }
             if (a === 'cancellata' && !confirm('Cancellare la prenotazione ' + b.codice + '?')) return;
-            E.cambiaStato(b.id, a);
-            chiudiModale();
-            render();
+            btn.disabled = true;
+            E.cambiaStato(b.id, a).then(function () {
+              chiudiModale();
+              render();
+            }, function (e) {
+              btn.disabled = false;
+              A.avvisa(e.message);
+            });
           });
         });
       }
@@ -135,19 +140,38 @@
             origine: 'manuale',
             consenso: true
           };
-          var res = b ? E.aggiornaPrenotazione(b.id, dati) : E.creaPrenotazione(dati);
-          if (!res.ok) return errore(res.error);
-          V.dataKey = dati.inizio.slice(0, 10);
-          chiudiModale();
-          render();
+          var salva = box.querySelector('[data-salva]');
+          var etichetta = salva.textContent;
+          salva.disabled = true;
+          salva.textContent = 'Salvo…';
+
+          (b ? E.aggiornaPrenotazione(b.id, dati) : E.creaPrenotazione(dati)).then(function (res) {
+            salva.disabled = false;
+            salva.textContent = etichetta;
+            if (!res.ok) return errore(res.error);
+            V.dataKey = dati.inizio.slice(0, 10);
+            chiudiModale();
+            render();
+          }, function (e) {
+            salva.disabled = false;
+            salva.textContent = etichetta;
+            // scritta non confermata dal server: la finestra resta aperta con i
+            // dati dentro, così il negozio non deve riscrivere tutto
+            errore(e.message);
+          });
         });
 
         var del = box.querySelector('[data-elimina]');
         if (del) del.addEventListener('click', function () {
           if (!confirm('Eliminare definitivamente questa prenotazione?')) return;
-          E.rimuovi('bookings', b.id);
-          chiudiModale();
-          render();
+          del.disabled = true;
+          E.rimuovi('bookings', b.id).then(function () {
+            chiudiModale();
+            render();
+          }, function (e) {
+            del.disabled = false;
+            errore(e.message);
+          });
         });
       }
     );

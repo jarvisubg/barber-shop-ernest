@@ -20,11 +20,11 @@
       var key = E.dayKey(domani);
 
       // 1 — sovrapposizione parziale rifiutata
-      var a = E.creaPrenotazione({
+      var a = E.locale.creaPrenotazione({
         serviziIds: ['cap-lunghi'], nome: 'Test', cognome: 'Uno', telefono: '3331112222',
         barberId: 'b1', inizio: key + 'T10:00', consenso: true
       });
-      var b = E.creaPrenotazione({
+      var b = E.locale.creaPrenotazione({
         serviziIds: ['cap-rasatura'], nome: 'Test', cognome: 'Due', telefono: '3331112223',
         barberId: 'b1', inizio: key + 'T10:15', consenso: true
       });
@@ -53,7 +53,7 @@
       ok('extra da solo bloccato', !!E.validaSelezione(['extra-sopracciglia']));
 
       // 7 — durata e prezzo ricalcolati server-side, non presi dal client
-      var m = E.creaPrenotazione({
+      var m = E.locale.creaPrenotazione({
         serviziIds: ['cap-base', 'extra-cera'], nome: 'Test', cognome: 'Tre', telefono: '3331112224',
         barberId: 'b1', inizio: key + 'T14:00', consenso: true, durata: 5, prezzo: 1
       });
@@ -63,7 +63,7 @@
       //      (Mario non lavora il lunedì)
       var lunedi = E.addDays(new Date(), 1);
       while (E.weekday(lunedi) !== 1) lunedi = E.addDays(lunedi, 1);
-      var riposo = E.creaPrenotazione({
+      var riposo = E.locale.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Sei', telefono: '3331112227',
         barberId: 'b2', inizio: E.dayKey(lunedi) + 'T14:00', consenso: true
       });
@@ -73,7 +73,7 @@
          slot oltre la propria durata. Trenta minuti dalle 16:00 devono bruciare
          due soli slot da 15; le 15:30 e le 16:30 restano prenotabili.
          Mario (b2) alle 16 è ancora libero da tutti i test precedenti. */
-      var mezzora = E.creaPrenotazione({
+      var mezzora = E.locale.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Otto', telefono: '3331112228',
         barberId: 'b2', inizio: key + 'T16:00', consenso: true
       });
@@ -90,11 +90,11 @@
         conBuffer.indexOf('15:30') === -1 && conBuffer.indexOf('16:30') === -1);
 
       // 8c — due appuntamenti consecutivi, senza buco fra l'uno e l'altro
-      var c1 = E.creaPrenotazione({
+      var c1 = E.locale.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Quattro', telefono: '3331112225',
         barberId: 'b2', inizio: key + 'T14:00', consenso: true
       });
-      var c2 = E.creaPrenotazione({
+      var c2 = E.locale.creaPrenotazione({
         serviziIds: ['barba-normale'], nome: 'Test', cognome: 'Cinque', telefono: '3331112226',
         barberId: 'b2', inizio: key + 'T14:30', consenso: true
       });
@@ -103,8 +103,8 @@
       // 8d — un servizio tolto dal listino non deve bloccare la modifica di una
       //      prenotazione già presa con quel servizio
       E.byId(db.services, 'cap-base').attivo = false;
-      var spostata = E.aggiornaPrenotazione(c1.booking.id, { note: 'spostato al banco' });
-      var nuova = E.creaPrenotazione({
+      var spostata = E.locale.aggiornaPrenotazione(c1.booking.id, { note: 'spostato al banco' });
+      var nuova = E.locale.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Nove', telefono: '3331112229',
         barberId: 'b2', inizio: key + 'T18:00', consenso: true
       });
@@ -114,11 +114,11 @@
 
       // 8e — una modifica rifiutata non deve lasciare il record mezzo scritto
       var primaNome = c2.booking.nome;
-      var ko = E.aggiornaPrenotazione(c2.booking.id, { nome: 'SPORCO', telefono: 'non-un-numero' });
+      var ko = E.locale.aggiornaPrenotazione(c2.booking.id, { nome: 'SPORCO', telefono: 'non-un-numero' });
       ok('modifica rifiutata non sporca il record', !ko.ok && c2.booking.nome === primaNome);
 
       // 8f — l'orizzonte di prenotazione online è quello impostato, non infinito
-      var oltre = E.creaPrenotazione({
+      var oltre = E.locale.creaPrenotazione({
         serviziIds: ['cap-base'], nome: 'Test', cognome: 'Dieci', telefono: '3331112230',
         barberId: 'b1', inizio: E.dayKey(E.addDays(new Date(), db.settings.giorniAvanti + 10)) + 'T14:00',
         consenso: true
@@ -127,12 +127,12 @@
 
       // 9 — cancellazione oltre finestra libera lo slot
       var prima = E.slotsFor(key, 'b1', 40, { ignoraAnticipo: true }).length;
-      var canc = E.cancellaConCodice(m.booking.codice, '3331112224');
+      var canc = E.locale.cancellaConCodice(m.booking.codice, '3331112224');
       var dopoC = E.slotsFor(key, 'b1', 40, { ignoraAnticipo: true }).length;
       ok('cancellazione libera lo slot', canc.ok && dopoC > prima);
 
       // 10 — codice giusto ma telefono sbagliato non cancella
-      var x = E.cancellaConCodice(a.booking.codice, '3339999999');
+      var x = E.locale.cancellaConCodice(a.booking.codice, '3339999999');
       ok('telefono errato non cancella', !x.ok && x.motivo === 'non_trovata');
 
       /* 10b — listino: le voci in evidenza sono quelle decise dal negozio, in

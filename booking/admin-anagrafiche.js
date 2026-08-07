@@ -77,8 +77,7 @@
           'Eliminandolo restano orfani: meglio disattivarlo dalla scheda.\nProcedere comunque?'
           : 'Eliminare questo barbiere?';
         if (!confirm(msg)) return;
-        E.rimuovi('barbers', b.dataset.del);
-        render();
+        A.dopo(E.rimuovi('barbers', b.dataset.del), render);
       });
     });
   }
@@ -101,7 +100,7 @@
       '<button class="btn" data-chiudi>Annulla</button></div>',
       function (box) {
         box.querySelector('[data-salva]').addEventListener('click', function () {
-          E.upsert('barbers', {
+          A.dopo(E.upsert('barbers', {
             id: id || undefined,
             nome: box.querySelector('[name=nome]').value.trim() || 'Senza nome',
             specialita: box.querySelector('[name=spec]').value.trim(),
@@ -109,9 +108,10 @@
             colore: box.querySelector('[name=colore]').value,
             ordine: Number(box.querySelector('[name=ordine]').value) || 1,
             attivo: box.querySelector('[name=attivo]').checked
+          }), function () {
+            chiudiModale();
+            render();
           });
-          chiudiModale();
-          render();
         });
       }
     );
@@ -142,12 +142,11 @@
     function monta(box) {
       box.querySelectorAll('[data-add]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          E.upsert('workingHours', { barberId: id, giorno: Number(btn.dataset.add), inizio: '09:00', fine: '13:00' });
-          disegna();
+          A.dopo(E.upsert('workingHours', { barberId: id, giorno: Number(btn.dataset.add), inizio: '09:00', fine: '13:00' }), disegna);
         });
       });
       box.querySelectorAll('[data-rm]').forEach(function (btn) {
-        btn.addEventListener('click', function () { E.rimuovi('workingHours', btn.dataset.rm); disegna(); });
+        btn.addEventListener('click', function () { A.dopo(E.rimuovi('workingHours', btn.dataset.rm), disegna); });
       });
       box.querySelectorAll('[data-f]').forEach(function (inp) {
         inp.addEventListener('change', function () {
@@ -160,8 +159,11 @@
             inp.value = f[inp.dataset.k];
             return;
           }
-          f[inp.dataset.k] = inp.value;
-          E.save();
+          /* Si manda al server la fascia modificata invece di ritoccarla in
+             locale: la copia del browser viene riscritta dalla risposta, quindi
+             una modifica fatta qui e non salvata là sparirebbe al primo
+             aggiornamento. */
+          A.dopo(E.upsert('workingHours', nuovo), null);
         });
       });
       box.querySelector('[data-fine]').addEventListener('click', function () { chiudiModale(); render(); });
@@ -207,14 +209,13 @@
         '<button class="btn" data-fine>Fatto</button></div>',
         function (box) {
           box.querySelectorAll('[data-rm]').forEach(function (btn) {
-            btn.addEventListener('click', function () { E.rimuovi('timeOff', btn.dataset.rm); disegna(); });
+            btn.addEventListener('click', function () { A.dopo(E.rimuovi('timeOff', btn.dataset.rm), disegna); });
           });
           box.querySelector('[data-add]').addEventListener('click', function () {
             var i = box.querySelector('[name=d1]').value + 'T' + box.querySelector('[name=t1]').value;
             var f = box.querySelector('[name=d2]').value + 'T' + box.querySelector('[name=t2]').value;
             if (!(f > i)) return alert('La fine deve essere successiva all\'inizio.');
-            E.upsert('timeOff', { barberId: id, inizio: i, fine: f, motivo: box.querySelector('[name=motivo]').value });
-            disegna();
+            A.dopo(E.upsert('timeOff', { barberId: id, inizio: i, fine: f, motivo: box.querySelector('[name=motivo]').value }), disegna);
           });
           box.querySelector('[data-fine]').addEventListener('click', function () { chiudiModale(); render(); });
         }
@@ -259,8 +260,7 @@
     box.querySelectorAll('[data-del]').forEach(function (b) {
       b.addEventListener('click', function () {
         if (!confirm('Eliminare questo servizio? Le prenotazioni già prese non cambiano.')) return;
-        E.rimuovi('services', b.dataset.del);
-        render();
+        A.dopo(E.rimuovi('services', b.dataset.del), render);
       });
     });
   }
@@ -294,7 +294,7 @@
         box.querySelector('[data-salva]').addEventListener('click', function () {
           var pieno = Number(box.querySelector('[name=pieno]').value);
           var evid = Number(box.querySelector('[name=evidenza]').value);
-          E.upsert('services', {
+          A.dopo(E.upsert('services', {
             id: id || undefined,
             nome: box.querySelector('[name=nome]').value.trim() || 'Servizio',
             descrizione: box.querySelector('[name=desc]').value.trim(),
@@ -305,9 +305,10 @@
             evidenza: evid > 0 ? evid : undefined,
             ordine: Number(box.querySelector('[name=ordine]').value) || 1,
             attivo: box.querySelector('[name=attivo]').checked
+          }), function () {
+            chiudiModale();
+            render();
           });
-          chiudiModale();
-          render();
         });
       }
     );
@@ -334,16 +335,15 @@
 
     var box = $('#tab-chiusure');
     box.querySelectorAll('[data-rm]').forEach(function (b) {
-      b.addEventListener('click', function () { E.rimuovi('closures', b.dataset.rm); render(); });
+      b.addEventListener('click', function () { A.dopo(E.rimuovi('closures', b.dataset.rm), render); });
     });
     box.querySelector('[data-add]').addEventListener('click', function () {
       var d1 = box.querySelector('[name=d1]').value, d2 = box.querySelector('[name=d2]').value;
       if (!d1 || !d2 || d2 < d1) return alert('Intervallo di date non valido.');
-      E.upsert('closures', {
+      A.dopo(E.upsert('closures', {
         inizio: d1 + 'T00:00', fine: d2 + 'T23:59',
         motivo: box.querySelector('[name=motivo]').value
-      });
-      render();
+      }), render);
     });
   }
 
@@ -383,15 +383,15 @@
 
     var box = $('#tab-impostazioni');
     box.querySelector('[data-salva]').addEventListener('click', function () {
+      var nuove = {};
       CAMPI.forEach(function (c) {
         var campo = box.querySelector('[name=' + c[0] + ']');
         if (campo.value === '') return;              // campo svuotato: si tiene il valore attuale
         var v = Number(campo.value);
-        if (isFinite(v) && v >= c[3]) E.db.settings[c[0]] = v;
+        if (isFinite(v) && v >= c[3]) nuove[c[0]] = v;
       });
-      E.db.settings.telefonoLabel = box.querySelector('[name=telefonoLabel]').value;
-      E.save();
-      render();
+      nuove.telefonoLabel = box.querySelector('[name=telefonoLabel]').value;
+      A.dopo(E.salvaImpostazioni(nuove), render);
     });
 
     box.querySelector('[data-check]').addEventListener('click', function () {

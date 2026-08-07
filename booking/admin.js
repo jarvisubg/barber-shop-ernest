@@ -27,25 +27,136 @@
 
   A.$ = $; A.esc = esc; A.barbiere = barbiere; A.attivi = attivi;
 
+  /* Ogni modifica passa dal server. Finché non conferma, non è successo
+     niente: si ridisegna solo dopo la risposta, e se fallisce lo si dice. */
+  A.dopo = function (promessa, poi) {
+    return promessa.then(function (r) {
+      if (poi) poi(r);
+      return r;
+    }, function (e) {
+      A.avvisa(e.message);
+    });
+  };
+
+  /* Un'operazione fallita va detta: senza, il negozio crede di aver spostato
+     un appuntamento che sul server è rimasto dov'era. */
+  A.avvisa = function (messaggio) {
+    if (/Sessione scaduta/.test(messaggio || '')) return A.esci(messaggio);
+    segnalaCollegamento(false, messaggio);
+    alert(messaggio);
+  };
+
   /* --------------------------------------------------------------- login */
+
+  /* La password non sta più nel bundle: la verifica il server, che in cambio
+     rilascia un token a scadenza. Prima bastava aprire il sorgente della
+     pagina per leggerla. */
+  var CHIAVE_TOKEN = 'ernest-admin-token';
 
   $('#login-form').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var pw = ev.target.pw.value;
-    if (pw !== E.db.settings.adminPassword) { $('#login-err').hidden = false; return; }
-    try { sessionStorage.setItem('ernest-admin', '1'); } catch (e) { /* ignore */ }
-    entra();
+    var btn = ev.target.querySelector('button[type=submit]');
+    var etichetta = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Verifico…'; }
+
+    E.login(ev.target.pw.value).then(function (r) {
+      if (btn) { btn.disabled = false; btn.textContent = etichetta; }
+      if (!r.token) { mostraErroreLogin('Password errata.'); return; }
+      try { sessionStorage.setItem(CHIAVE_TOKEN, r.token); } catch (e) { /* ignore */ }
+      entra();
+    }, function (e) {
+      if (btn) { btn.disabled = false; btn.textContent = etichetta; }
+      mostraErroreLogin(e.message);
+    });
   });
+
+  function mostraErroreLogin(messaggio) {
+    var el = $('#login-err');
+    el.hidden = false;
+    el.textContent = messaggio;
+  }
 
   function entra() {
     $('#login').hidden = true;
     $('#app').hidden = false;
     $('#oggi-info').textContent = E.labelData(new Date());
     render();
+    avviaAggiornamento();
+  }
+
+  A.esci = function (messaggio) {
+    try { sessionStorage.removeItem(CHIAVE_TOKEN); } catch (e) { /* ignore */ }
+    E.esci();
+    fermaAggiornamento();
+    $('#app').hidden = true;
+    $('#login').hidden = false;
+    if (messaggio) mostraErroreLogin(messaggio);
+  };
+
+  /* L'agenda va tenuta viva da sola: il negozio lascia il gestionale aperto sul
+     bancone tutto il giorno, e una prenotazione presa da un cliente deve
+     comparire senza che nessuno ricarichi la pagina. */
+  var AGGIORNA_OGNI_MS = 30000;
+  var timer = null;
+
+  function aggiorna() {
+    return E.aggiorna().then(function () {
+      segnalaCollegamento(true);
+      render();
+    }, function (e) {
+      if (/Sessione scaduta/.test(e.message)) return A.esci(e.message);
+      segnalaCollegamento(false, e.message);
+    });
+  }
+
+  function avviaAggiornamento() {
+    fermaAggiornamento();
+    timer = setInterval(function () {
+      if (document.hidden) return;   // scheda in secondo piano: niente traffico inutile
+      aggiorna();
+    }, AGGIORNA_OGNI_MS);
+    document.addEventListener('visibilitychange', alRitorno);
+  }
+
+  /* Mentre la scheda è nascosta il ciclo non gira: tornando sopra l'agenda
+     avrebbe fino a mezzo minuto di ritardo, e in quel buco può esserci il
+     cliente appena arrivato. Si aggiorna subito, senza aspettare il tick. */
+  function alRitorno() {
+    if (!document.hidden && timer) aggiorna();
+  }
+
+  function fermaAggiornamento() {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.removeEventListener('visibilitychange', alRitorno);
+  }
+
+  /* Se il collegamento cade, l'agenda mostrata è vecchia. Dirlo: un'agenda
+     ferma che sembra aggiornata è il modo di perdere un cliente arrivato dopo
+     l'ultima sincronizzazione. */
+  function segnalaCollegamento(ok, messaggio) {
+    var el = $('#stato-collegamento');
+    if (!el) return;
+    el.hidden = !!ok;
+    if (!ok) {
+      el.textContent = '⚠ ' + (messaggio || 'Collegamento assente') +
+        ' — l\'agenda potrebbe non essere aggiornata.';
+    }
   }
 
   A.avvia = function () {
-    try { if (sessionStorage.getItem('ernest-admin') === '1') entra(); } catch (e) { /* ignore */ }
+    var token = null;
+    try { token = sessionStorage.getItem(CHIAVE_TOKEN); } catch (e) { /* ignore */ }
+
+    E.avviaClient({ api: (global.ErnestConfig || {}).api, token: token })
+      .then(function (esito) {
+        if (esito.daCache) segnalaCollegamento(false, esito.errore);
+        if (token) entra();
+      }, function (e) {
+        // token vecchio o revocato: si riparte dalla schermata di accesso
+        try { sessionStorage.removeItem(CHIAVE_TOKEN); } catch (err) { /* ignore */ }
+        E.esci();
+        mostraErroreLogin(e.message);
+      });
   };
 
   /* --------------------------------------------------------------- tabs */
@@ -65,11 +176,11 @@
     });
   });
 
-  $('#btn-reset').addEventListener('click', function () {
-    if (!confirm('Ripristina i dati dimostrativi? Le prenotazioni create a mano andranno perse.')) return;
-    E.reset();
-    render();
-  });
+  /* Il pulsante "ripristina dati dimostrativi" è stato tolto: su un'agenda vera
+     un click distratto cancellerebbe le prenotazioni dei clienti. Il server non
+     espone nemmeno l'operazione. */
+  var btnEsci = $('#btn-esci');
+  if (btnEsci) btnEsci.addEventListener('click', function () { A.esci(); });
 
   function render() {
     var fn = A.viste[V.tab];
