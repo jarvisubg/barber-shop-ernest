@@ -51,8 +51,12 @@
   var MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
     'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
 
+  /* L'anno compare solo se non è quello in corso. Da quando si prenota fino a
+     un anno avanti, "martedì 3 agosto" da solo è ambiguo: chi conferma per
+     l'estate prossima deve vederlo scritto. */
   function labelData(d) {
-    return GIORNI[weekday(d)] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()];
+    var base = GIORNI[weekday(d)] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()];
+    return d.getFullYear() === new Date().getFullYear() ? base : base + ' ' + d.getFullYear();
   }
 
   function euro(n) {

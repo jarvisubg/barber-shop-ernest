@@ -53,7 +53,7 @@
       closures: [],
       bookings: [],
       settings: JSON.parse(JSON.stringify(SEED.SETTINGS)),
-      schema: 2,
+      schema: 3,
       listinoVersione: SEED.LISTINO_VERSIONE
     };
   }
@@ -465,9 +465,18 @@
     /* Il buffer di default era 5 minuti. Applicato su entrambi i lati e
        arrotondato alla griglia da 15, un appuntamento da 30 minuti ne occupava
        75. Il ciclo qui sopra riempie solo le chiavi mancanti, non i valori. */
-    if (stato.schema !== 2) {
+    if (!(stato.schema >= 2)) {
       if (stato.settings.buffer === 5) stato.settings.buffer = 0;
       stato.schema = 2;
+    }
+    /* L'orizzonte di prenotazione era 30 giorni. Si alza a un anno solo per chi
+       aveva ancora il valore di partenza: se il negozio l'ha cambiato dal
+       gestionale è una sua decisione. Legata allo schema e non al valore,
+       perché altrimenti rigirerebbe a ogni riavvio e rovescerebbe una scelta
+       fatta dopo — per questo stato.js salva subito dopo la migrazione. */
+    if (!(stato.schema >= 3)) {
+      if (stato.settings.giorniAvanti === 30) stato.settings.giorniAvanti = 365;
+      stato.schema = 3;
     }
     /* Il listino vive dentro lo stato salvato, non viene riletto dal seed a
        ogni avvio: altrimenti il negozio non potrebbe mai cambiare un prezzo dal

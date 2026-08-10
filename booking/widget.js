@@ -44,6 +44,7 @@
       vista: 'prenota',        // 'prenota' | 'gestisci'
       step: 0,
       catAttiva: 'tutti',      // 'tutti' = listino intero, evidenza in cima
+      meseOffset: 0,           // mesi da oggi mostrati nella striscia dei giorni
       serviziIds: [],
       barberId: undefined,     // undefined = non scelto, null = primo disponibile
       dataKey: null,
@@ -68,6 +69,11 @@
   }
 
   function totali() { return E.totali(S.serviziIds); }
+
+  function mesiDaOggi(key) {
+    var d = E.at(key, 0), oggi = new Date();
+    return (d.getFullYear() - oggi.getFullYear()) * 12 + (d.getMonth() - oggi.getMonth());
+  }
 
   /* La lunghezza dei capelli non si chiede più: era un passo in più prima di
      vedere il listino. Resta come nota per il barbiere nel gestionale e la si
@@ -217,7 +223,22 @@
       return render();
     }
 
-    if (act === 'giorno') { S.dataKey = b.dataset.key; S.ora = null; return render(); }
+    if (act === 'mese') {
+      /* Cambiando mese la data scelta si azzera: la rimpiazza il primo giorno
+         libero del mese guardato, altrimenti sotto la striscia resterebbero gli
+         orari di un giorno non più visibile. */
+      S.meseOffset += Number(b.dataset.delta);
+      S.dataKey = null; S.ora = null;
+      return render();
+    }
+
+    if (act === 'giorno') {
+      S.dataKey = b.dataset.key;
+      // un salto a una data lontana si porta dietro la striscia
+      S.meseOffset = mesiDaOggi(b.dataset.key);
+      S.ora = null;
+      return render();
+    }
 
     if (act === 'slot') {
       S.ora = b.dataset.ora;

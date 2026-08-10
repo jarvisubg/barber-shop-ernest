@@ -389,6 +389,39 @@ body.bk-locked { overflow: hidden; }
 
 /* ------------------------------------------------------------- giorni */
 
+/* Testata del mese: con un orizzonte di un anno la striscia si sfoglia, e
+   senza il nome del mese scritto un "12" da solo non dice in quale mese cade. */
+.bk-mese {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.bk-mese-nome {
+  font: 800 .92rem/1 var(--bk-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.bk-mese-nav {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--bk-line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--bk-paper);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.bk-mese-nav:hover:not([disabled]) { background: var(--bk-paper); color: var(--bk-ink); }
+.bk-mese-nav[disabled] { opacity: .26; cursor: not-allowed; }
+
 .bk-days {
   display: flex;
   gap: 8px;

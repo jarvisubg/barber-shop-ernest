@@ -144,23 +144,57 @@
 
       /* ---------------------------------------------------------------- ora */
 
+      function slotDi(key, durata) {
+        return E.slotsFor(key, S.barberId === null ? null : S.barberId, durata);
+      }
+
+      /* Primo giorno con posto a partire da `da`. Si ferma appena lo trova:
+         scorrere tutto l'orizzonte a ogni render costerebbe 365 calcoli di
+         slot per un'informazione che serve solo quando non c'è niente libero. */
+      function primoLibero(da, limite, durata) {
+        for (var d = da; d <= limite; d = E.addDays(d, 1)) {
+          var key = E.dayKey(d);
+          if (slotDi(key, durata).length) return { d: d, key: key };
+        }
+        return null;
+      }
+
+      /* La striscia dei giorni si sfoglia per mese. L'orizzonte è un anno:
+         una striscia unica sarebbe da 365 pulsanti, inservibile sul telefono e
+         inutile da calcolare, perché gli slot vanno ricavati giorno per giorno.
+         Il limite resta quello del gestionale, non un numero fisso, altrimenti
+         il motore rifiuterebbe date che la striscia mostra come libere. */
       function vistaOra() {
         sync();
         var durata = durataTotale();
-        var oggi = new Date();
+        var oggi = E.at(E.dayKey(new Date()), 0);
+        var limite = E.addDays(oggi, E.db.settings.giorniAvanti);
+
+        var mese = new Date(oggi.getFullYear(), oggi.getMonth() + S.meseOffset, 1);
+        var dal = mese < oggi ? oggi : mese;
+        var fineMese = new Date(mese.getFullYear(), mese.getMonth() + 1, 0);
+        var al = fineMese > limite ? limite : fineMese;
+
         var giorni = [];
-        // l'orizzonte è quello impostato nel gestionale, non un numero fisso:
-        // altrimenti il motore rifiuta date che la striscia mostra come libere
-        var orizzonte = E.db.settings.giorniAvanti;
-        for (var i = 0; i <= orizzonte; i++) {
-          var d = E.addDays(oggi, i);
-          var key = E.dayKey(d);
-          var liberi = E.slotsFor(key, S.barberId === null ? null : S.barberId, durata);
-          giorni.push({ d: d, key: key, liberi: liberi });
+        for (var d = dal; d <= al; d = E.addDays(d, 1)) {
+          giorni.push({ d: d, key: E.dayKey(d), liberi: slotDi(E.dayKey(d), durata) });
         }
 
-        var primoUtile = giorni.filter(function (g) { return g.liberi.length; })[0];
-        if (!S.dataKey && primoUtile) S.dataKey = primoUtile.key;
+        /* La data scelta deve stare nel mese guardato: altrimenti sotto la
+           striscia comparirebbero gli orari di un giorno che non si vede. */
+        var scelto = giorni.filter(function (g) { return g.key === S.dataKey; })[0];
+        if (!scelto) {
+          scelto = giorni.filter(function (g) { return g.liberi.length; })[0] || null;
+          S.dataKey = scelto ? scelto.key : null;
+        }
+
+        var testata = '<div class="bk-mese">' +
+          '<button class="bk-mese-nav" type="button" data-act="mese" data-delta="-1"' +
+            (S.meseOffset > 0 ? '' : ' disabled') + ' aria-label="Mese precedente">&lsaquo;</button>' +
+          '<span class="bk-mese-nome">' + esc(E.MESI[mese.getMonth()]) + ' ' + mese.getFullYear() + '</span>' +
+          '<button class="bk-mese-nav" type="button" data-act="mese" data-delta="1"' +
+            (E.addDays(al, 1) <= limite ? '' : ' disabled') + ' aria-label="Mese successivo">&rsaquo;</button>' +
+        '</div>';
 
         var strip = giorni.map(function (g) {
           var sel = g.key === S.dataKey;
@@ -171,17 +205,22 @@
             '<span class="bk-day-mon">' + E.MESI[g.d.getMonth()].slice(0, 3) + '</span></button>';
         }).join('');
 
-        var scelto = giorni.filter(function (g) { return g.key === S.dataKey; })[0];
         var corpo;
 
         if (!scelto || !scelto.liberi.length) {
+          /* Due casi diversi: il giorno scelto si è appena riempito, oppure in
+             tutto il mese non c'è niente. Il salto porta anche la striscia sul
+             mese giusto — lo fa il gestore di `giorno` in widget.js. */
+          var prossimo = primoLibero(scelto ? E.addDays(scelto.d, 1) : dal, limite, durata);
           corpo = '<div class="bk-empty">' +
-            '<b>Completamente prenotato in questa data.</b>' +
-            (primoUtile
-              ? '<span>Disponibile da ' + esc(E.labelData(primoUtile.d)) + '</span>' +
+            '<b>' + (scelto
+              ? 'Completamente prenotato in questa data.'
+              : 'Nessun orario libero a ' + esc(E.MESI[mese.getMonth()]) + '.') + '</b>' +
+            (prossimo
+              ? '<span>Disponibile da ' + esc(E.labelData(prossimo.d)) + '</span>' +
                 '<button class="bk-cta bk-cta-ghost" type="button" data-act="giorno" data-key="' +
-                primoUtile.key + '">Vai alla prossima data disponibile</button>'
-              : '<span>Nessuna disponibilità nei prossimi ' + orizzonte + ' giorni. ' +
+                prossimo.key + '">Vai alla prossima data disponibile</button>'
+              : '<span>Nessuna disponibilità fino al ' + esc(E.labelData(limite)) + '. ' +
                 'Chiama il negozio allo ' + esc(E.db.settings.telefonoLabel) + '.</span>') +
             '</div>';
         } else {
@@ -203,7 +242,7 @@
         }
 
         return '<h3 class="bk-group-title">Seleziona una data</h3>' +
-          '<div class="bk-days">' + strip + '</div>' + corpo;
+          testata + '<div class="bk-days">' + strip + '</div>' + corpo;
       }
 
       /* ----------------------------------------------------------- conferma */

@@ -68,7 +68,12 @@
     buffer: 0,
     finestraCancellazioneOre: 2,
     anticipoMinimoMinuti: 60,
-    giorniAvanti: 30,
+    /* Un anno. Erano 30 giorni, e il negozio ha segnalato che chi vuole fissare
+       il taglio più in là non ci riesce e deve telefonare: un appuntamento che
+       il sito rifiuta è un appuntamento che il negozio rischia di non prendere.
+       Il tetto resta perché la striscia dei giorni si ferma da qualche parte e
+       perché il Durable Object carica le prenotazioni entro 400 giorni. */
+    giorniAvanti: 365,
     maxPrenotazioniAttive: 3,
     telefono: '+393280774789',
     telefonoLabel: '328 077 4789'
