@@ -27,6 +27,17 @@
      prenotazione nuova. */
   var CACHE_KEY = 'ernest-cache-v1';
 
+  /* Tetto assoluto, oltre l'orizzonte configurabile del gestionale: è la
+     finestra di agenda che il Durable Object ricarica all'avvio (la usa
+     server/stato.js). Una prenotazione più in là resterebbe su disco ma non
+     verrebbe più letta: sparirebbe dall'agenda e il suo slot tornerebbe
+     libero, in silenzio. Vale anche per quelle segnate a mano dal gestionale,
+     che saltano il limite online. Meglio un rifiuto chiaro che un
+     appuntamento che svanisce.
+     Per alzarlo basta cambiare qui: cresce solo la quantità di prenotazioni
+     tenute in memoria dal server. */
+  var GIORNI_ARCHIVIO = 400;
+
   /* helper di data/ora e formato: vivono in tempo.js */
   var pad = T.pad, dayKey = T.dayKey, toMin = T.toMin, toHHMM = T.toHHMM, at = T.at,
       stamp = T.stamp, parse = T.parse, weekday = T.weekday, addDays = T.addDays,
@@ -308,8 +319,22 @@
       if (inizio < new Date(Date.now() + db.settings.anticipoMinimoMinuti * 60000)) {
         return { ok: false, error: 'Questo orario è troppo vicino. Scegline uno più avanti o chiama il negozio.' };
       }
-      // il limite vale solo online: al banco il negozio segna anche a sei mesi
-      if (p.origine !== 'manuale' && inizio > addDays(new Date(), db.settings.giorniAvanti)) {
+      if (dayKey(inizio) > dayKey(addDays(new Date(), GIORNI_ARCHIVIO))) {
+        return {
+          ok: false,
+          error: 'Data troppo lontana: l\'agenda arriva a ' + GIORNI_ARCHIVIO +
+            ' giorni da oggi.'
+        };
+      }
+      /* Il limite vale solo online: al banco il negozio segna anche a sei mesi.
+         Il confronto è fra giorni, non fra istanti: `addDays(now, 365)` porta
+         con sé l'ora corrente, quindi alle 9 del mattino l'ultimo giorno
+         dell'orizzonte era prenotabile solo prima delle 9 — mentre la striscia
+         lo mostrava libero tutto il giorno. Il cliente sceglieva uno slot che
+         il server rifiutava, e l'ora del rifiuto cambiava a seconda di quando
+         guardava. */
+      if (p.origine !== 'manuale' &&
+          dayKey(inizio) > dayKey(addDays(new Date(), db.settings.giorniAvanti))) {
         return {
           ok: false,
           error: 'Si può prenotare al massimo ' + db.settings.giorniAvanti +
@@ -600,6 +625,7 @@
     popolaDemo: popolaDemo,
     migra: migra,
     vuoto: vuoto,
+    GIORNI_ARCHIVIO: GIORNI_ARCHIVIO,
     /* Salvataggio esplicito, per le modifiche che non passano da una funzione
        di dominio (le impostazioni si scrivono in blocco). Solo in modo server. */
     forzaSalvataggio: save,
