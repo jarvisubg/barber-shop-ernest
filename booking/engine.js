@@ -178,8 +178,13 @@
      leggibile sulle prenotazioni già prese, altrimenti il gestionale non
      riuscirebbe più nemmeno a spostarle. Il filtro su `attivo` vale solo su
      ciò che il cliente sceglie ex novo — lo applica creaPrenotazione. */
+  /* `ids` arriva anche da fuori: /api/prenotazioni accetta qualunque JSON, e un
+     corpo senza `serviziIds` faceva esplodere `.map` — il Worker rispondeva 500
+     invece del solito rifiuto con motivo. Chi non manda servizi cade su
+     validaSelezione, che dice "Seleziona almeno un servizio". */
   function servizi(ids) {
-    return ids.map(function (id) { return byId(db.services, id); })
+    return (Array.isArray(ids) ? ids : [])
+      .map(function (id) { return byId(db.services, id); })
       .filter(function (s) { return !!s; });
   }
 
@@ -289,7 +294,20 @@
     }
 
     var t = totali(p.serviziIds);
+
+    /* `inizio` arriva dal client, e `parse` si fida: su un valore mancante o
+       storto faceva esplodere `.split` e il Worker rispondeva 500 invece del
+       solito rifiuto. Il secondo controllo serve perché la forma da sola non
+       basta: "2026-13-45T10:00" passa la regex ma Date lo fa rotolare a
+       febbraio, e il cliente resterebbe prenotato in un giorno che non ha mai
+       scelto. */
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(p.inizio)) {
+      return { ok: false, error: 'Data non valida.' };
+    }
     var inizio = parse(p.inizio);
+    if (dayKey(inizio) + 'T' + toHHMM(inizio.getHours() * 60 + inizio.getMinutes()) !== p.inizio) {
+      return { ok: false, error: 'Data non valida.' };
+    }
     var fine = new Date(inizio.getTime() + t.durata * 60000);
     var barberId = p.barberId;
 
