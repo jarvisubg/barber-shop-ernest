@@ -215,7 +215,8 @@
           corpo = '<div class="bk-empty">' +
             '<b>' + (scelto
               ? 'Completamente prenotato in questa data.'
-              : 'Nessun orario libero a ' + esc(E.MESI[mese.getMonth()]) + '.') + '</b>' +
+              // "in agosto" e non "a agosto": regge tutti i mesi senza eufonia
+              : 'Nessun orario libero in ' + esc(E.MESI[mese.getMonth()]) + '.') + '</b>' +
             (prossimo
               ? '<span>Disponibile da ' + esc(E.labelData(prossimo.d)) + '</span>' +
                 '<button class="bk-cta bk-cta-ghost" type="button" data-act="giorno" data-key="' +
