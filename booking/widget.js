@@ -41,7 +41,9 @@
 
   function nuovoStato() {
     return {
-      vista: 'prenota',        // 'prenota' | 'gestisci'
+      vista: 'prenota',        // 'prenota' | 'gestisci' | 'attesa'
+      attesaKey: null,         // giorno pieno per cui si aspetta un posto
+      esitoAttesa: null,
       step: 0,
       catAttiva: 'tutti',      // 'tutti' = listino intero, evidenza in cima
       meseOffset: 0,           // mesi da oggi mostrati nella striscia dei giorni
@@ -246,6 +248,21 @@
       return render();
     }
 
+    if (act === 'attesa') {
+      S.attesaKey = b.dataset.key;
+      S.esitoAttesa = null;
+      S.errore = null;
+      S.vista = 'attesa';
+      return render();
+    }
+    /* Torna alla scelta dell'orario senza azzerare niente: servizi, barbiere e
+       mese guardato restano quelli, altrimenti chi cambia idea ricomincia. */
+    if (act === 'attesa-indietro') {
+      S.vista = 'prenota';
+      S.esitoAttesa = null;
+      return render();
+    }
+    if (act === 'iscrivi-attesa') return iscriviAttesa();
     if (act === 'conferma') return conferma();
     if (act === 'copia') return copiaCodice(b);
     if (act === 'ics') return scaricaIcs();
@@ -342,6 +359,10 @@
 
   function indietro() {
     if (S.vista === 'gestisci') { S = nuovoStato(); return render(); }
+    /* Dalla lista d'attesa si torna alla scelta dell'orario con tutto al suo
+       posto: azzerare qui farebbe ricominciare dal listino chi ha solo
+       sbagliato pulsante. */
+    if (S.vista === 'attesa') { S.vista = 'prenota'; S.esitoAttesa = null; return render(); }
     if (S.step === 0) return chiudi();
     S.errore = null;
     S.step -= 1;
@@ -352,6 +373,7 @@
 
   function render() {
     if (S.vista === 'gestisci') return renderGestisci();
+    if (S.vista === 'attesa') return renderAttesa();
 
     var nome = STEPS[S.step];
     elTitolo.textContent = TITOLI[nome];
@@ -362,8 +384,20 @@
     elBody.innerHTML = VISTE[nome]();
     if (S.errore) elBody.insertAdjacentHTML('beforeend', '<p class="bk-error">' + esc(S.errore) + '</p>');
     elBody.closest('.bk-body').scrollTop = 0;
+    mostraGiornoScelto();
     aggiornaCarrello();
     aggiornaPiede();
+  }
+
+  /* La striscia scorre in orizzontale e parte dal primo del mese: senza questo,
+     chi cade su una data lontana — il salto alla prossima libera, o un giorno
+     pieno a fine mese — legge "completamente prenotato" senza vedere di quale
+     giorno si parli, perché il riquadro selezionato è fuori schermo. */
+  function mostraGiornoScelto() {
+    var scelto = elBody.querySelector('.bk-day[aria-pressed="true"]');
+    if (!scelto) return;
+    var striscia = scelto.parentElement;
+    striscia.scrollLeft = scelto.offsetLeft - striscia.offsetLeft - 8;
   }
 
   function briciole() {
@@ -563,6 +597,98 @@
 
     elBody.innerHTML = corpo;
     elBody.closest('.bk-body').scrollTop = 0;
+  }
+
+  /* ---------------------------------------------------- lista d'attesa */
+
+  /* Vista fuori dal flusso a passi, come "gestisci": non è una prenotazione e
+     non deve comparire nelle briciole, altrimenti sembrerebbe un passaggio
+     obbligato verso la conferma. */
+  function renderAttesa() {
+    elTitolo.textContent = 'Lista d\'attesa';
+    elCrumbs.innerHTML = '';
+    overlay.dataset.cart = 'false';
+    elFoot.parentElement.style.display = 'none';
+
+    var d = E.at(S.attesaKey, 0);
+    var barbiere = S.barberId ? E.byId(E.db.barbers, S.barberId) : null;
+    var t = totali();
+    var corpo;
+
+    if (S.esitoAttesa) {
+      elH.textContent = 'Sei in lista.';
+      corpo = '<div class="bk-code"><b>In attesa</b>' +
+          '<small>' + esc(E.labelData(d)) + '</small></div>' +
+        '<p class="bk-sub">' + (S.esitoAttesa.giaIscritto
+          ? 'Eri già in lista per questo giorno: non ti abbiamo aggiunto due volte.'
+          : 'Se si libera un posto ti chiamiamo noi al ' + esc(S.esitoAttesa.telefono) + '. ' +
+            'Non è una prenotazione: l\'appuntamento resta da fissare quando ti sentiamo.') + '</p>' +
+        '<div class="bk-actions">' +
+          '<a href="tel:' + TELEFONO + '">Chiama ' + esc(TELEFONO_LABEL) + '</a>' +
+        '</div>' +
+        '<button class="bk-cta bk-cta-ghost" type="button" data-act="attesa-indietro">' +
+          'Guarda un\'altra data</button>' +
+        '<button class="bk-link" type="button" data-act="chiudi">Torna al sito</button>';
+    } else {
+      elH.textContent = 'Ti avvisiamo noi.';
+      corpo = '<p class="bk-sub">Questo giorno è pieno. Lasciaci il numero: se qualcuno disdice, ' +
+          'ti chiamiamo prima di rimettere l\'orario online.</p>' +
+        '<dl class="bk-recap">' +
+          '<div class="bk-recap-row"><dt>Giorno</dt><dd>' + esc(E.labelData(d)) + '</dd></div>' +
+          '<div class="bk-recap-row"><dt>Barbiere</dt><dd>' +
+            esc(barbiere ? barbiere.nome : 'Primo disponibile') + '</dd></div>' +
+          '<div class="bk-recap-row"><dt>Servizi</dt><dd>' +
+            (t.servizi.length
+              ? t.servizi.map(function (s) { return esc(s.nome); }).join('<br>')
+              : '—') + '</dd></div>' +
+        '</dl>' +
+        '<label class="bk-field"><span>Nome</span>' +
+          '<input name="nome" type="text" autocomplete="given-name" value="' + esc(S.nome) + '" required></label>' +
+        '<label class="bk-field"><span>Cognome</span>' +
+          '<input name="cognome" type="text" autocomplete="family-name" value="' + esc(S.cognome) + '" required></label>' +
+        '<label class="bk-field"><span>Telefono</span>' +
+          '<input name="telefono" type="tel" inputmode="tel" autocomplete="tel" placeholder="328 077 4789" value="' +
+          esc(S.telefono) + '" required></label>' +
+        '<label class="bk-check"><input name="consenso" type="checkbox"' + (S.consenso ? ' checked' : '') + '>' +
+        '<span>Ho letto l\'informativa privacy e acconsento a essere ricontattato ' +
+          'per questo giorno.</span></label>' +
+        (S.errore ? '<p class="bk-error">' + esc(S.errore) + '</p>' : '') +
+        '<button class="bk-cta" type="button" data-act="iscrivi-attesa" style="width:100%;margin-top:8px">' +
+          'Avvisami se si libera</button>' +
+        '<button class="bk-link" type="button" data-act="attesa-indietro">Torna alla scelta dell\'orario</button>';
+    }
+
+    elBody.innerHTML = corpo;
+    elBody.closest('.bk-body').scrollTop = 0;
+  }
+
+  function iscriviAttesa() {
+    var bottone = elBody.querySelector('[data-act="iscrivi-attesa"]');
+    if (bottone) { bottone.disabled = true; bottone.textContent = 'Invio…'; }
+
+    E.iscriviListaAttesa({
+      dataKey: S.attesaKey,
+      barberId: S.barberId || null,
+      serviziIds: S.serviziIds,
+      nome: S.nome, cognome: S.cognome, telefono: S.telefono,
+      consenso: S.consenso
+    }).then(function (res) {
+      if (!res.ok) {
+        S.errore = res.error;
+        return renderAttesa();
+      }
+      S.errore = null;
+      S.esitoAttesa = { telefono: res.attesa.telefono, giaIscritto: !!res.giaIscritto };
+      renderAttesa();
+    }, function (e) {
+      /* Come per la conferma: se la rete cade non si sa se l'iscrizione è
+         passata. Meglio dirlo che far ritentare alla cieca. */
+      S.errore = e.diRete
+        ? e.message + ' Se hai già toccato "Avvisami" una volta, chiamaci al ' +
+          TELEFONO_LABEL + ' invece di riprovare.'
+        : e.message;
+      renderAttesa();
+    });
   }
 
   function schedaTrovata() {

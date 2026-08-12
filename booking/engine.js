@@ -63,8 +63,16 @@
       timeOff: [],
       closures: [],
       bookings: [],
+      /* Chi ha trovato tutto pieno e vuole essere chiamato se si libera un
+         posto. Sta nella configurazione e non in chiavi per giorno come le
+         prenotazioni: sono poche voci e si cancellano da sole quando la data
+         passa.
+         ponytail: se un giorno la lista diventasse lunga (centinaia di voci
+         insieme) va spostata su chiavi proprie, perché così ogni iscrizione
+         riscrive l'intero blocco di configurazione. */
+      waitlist: [],
       settings: JSON.parse(JSON.stringify(SEED.SETTINGS)),
-      schema: 3,
+      schema: 4,
       listinoVersione: SEED.LISTINO_VERSIONE
     };
   }
@@ -108,12 +116,17 @@
      vengono allargate di `buffer` minuti su entrambi i lati: così fra due
      appuntamenti resta sempre almeno il buffer, senza doppio conteggio.
      Ferie e chiusure sono blocchi netti, senza buffer. */
-  function busyRanges(barberId, key) {
+  function busyRanges(barberId, key, soloStruttura) {
     var giornoIn = at(key, 0), giornoFin = at(key, 24 * 60);
     var buf = db.settings.buffer * 60000;
     var out = [];
 
-    db.bookings.forEach(function (b) {
+    /* `soloStruttura` lascia fuori gli appuntamenti e tiene ferie e chiusure:
+       serve a distinguere un giorno PIENO (il negozio lavora, gli orari sono
+       stati presi tutti) da un giorno CHIUSO. Sul primo ha senso offrire la
+       lista d'attesa, perché una disdetta può liberare un posto; sul secondo
+       non c'è niente da aspettare. */
+    if (!soloStruttura) db.bookings.forEach(function (b) {
       if (b.stato === 'cancellata' || b.barberId !== barberId) return;
       var s = new Date(parse(b.inizio).getTime() - buf);
       var e = new Date(parse(b.fine).getTime() + buf);
@@ -149,7 +162,7 @@
 
     lista.forEach(function (b) {
       if (!b || (!b.attivo && !opts.includiInattivi)) return;
-      var busy = busyRanges(b.id, key);
+      var busy = busyRanges(b.id, key, opts.soloStruttura);
       db.workingHours.forEach(function (f) {
         if (f.barberId !== b.id || f.giorno !== wd) return;
         var fi = toMin(f.inizio), ff = toMin(f.fine);
@@ -470,6 +483,89 @@
     return db.bookings.filter(function (x) { return x.codice === c && x.telefono === t; })[0] || null;
   }
 
+  /* ------------------------------------------------------ lista d'attesa */
+
+  /* Iscrizione a una data piena. Non prenota niente e non tocca l'agenda: è
+     solo un recapito che il negozio richiama se si libera un posto. Le stesse
+     regole della prenotazione valgono anche qui — il client non è una fonte
+     affidabile nemmeno per questo. */
+  function iscriviListaAttesaLocale(p) {
+    var errore = validaSelezione(p.serviziIds);
+    if (errore) return { ok: false, error: errore };
+
+    if (!p.nome || !String(p.nome).trim()) return { ok: false, error: 'Inserisci il nome.' };
+    if (!p.cognome || !String(p.cognome).trim()) return { ok: false, error: 'Inserisci il cognome.' };
+    if (!telefonoValido(p.telefono)) return { ok: false, error: 'Numero di telefono non valido.' };
+    if (!p.consenso) {
+      return { ok: false, error: 'Devi accettare il trattamento dei dati per essere richiamato.' };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(p.dataKey)) return { ok: false, error: 'Data non valida.' };
+
+    var oggiKey = dayKey(new Date());
+    if (p.dataKey < oggiKey) return { ok: false, error: 'Quella data è già passata.' };
+    if (p.dataKey > dayKey(addDays(new Date(), db.settings.giorniAvanti))) {
+      return {
+        ok: false,
+        error: 'Si può prenotare al massimo ' + db.settings.giorniAvanti +
+          ' giorni in anticipo. Per date più lontane chiama il negozio.'
+      };
+    }
+
+    var barberId = p.barberId || null;
+    if (barberId && !byId(db.barbers, barberId)) return { ok: false, error: 'Barbiere non valido.' };
+
+    var tel = normalizzaTelefono(p.telefono);
+    /* Riscriversi per la stessa data non crea un doppione: il negozio si
+       ritroverebbe due volte lo stesso numero da chiamare. */
+    var gia = db.waitlist.filter(function (w) {
+      return w.telefono === tel && w.dataKey === p.dataKey && w.barberId === barberId;
+    })[0];
+    if (gia) return { ok: true, attesa: gia, giaIscritto: true };
+
+    var attive = db.waitlist.filter(function (w) { return w.telefono === tel; }).length;
+    if (attive >= db.settings.maxPrenotazioniAttive) {
+      return {
+        ok: false,
+        error: 'Sei già in lista d\'attesa per ' + attive + ' date. ' +
+          'Per aggiungerne altre chiama il negozio.'
+      };
+    }
+
+    var t = totali(p.serviziIds);
+    var rec = {
+      id: uid(),
+      dataKey: p.dataKey,
+      barberId: barberId,
+      serviziIds: p.serviziIds.slice(),
+      servizi: t.servizi.map(function (s) { return { id: s.id, nome: s.nome }; }),
+      durata: t.durata,
+      nome: String(p.nome).trim(),
+      cognome: String(p.cognome).trim(),
+      telefono: tel,
+      consenso: true,
+      createdAt: stamp(new Date())
+    };
+    db.waitlist.push(rec);
+    save();
+    return { ok: true, attesa: rec };
+  }
+
+  function rimuoviListaAttesaLocale(id) {
+    var prima = db.waitlist.length;
+    db.waitlist = db.waitlist.filter(function (w) { return w.id !== id; });
+    if (db.waitlist.length !== prima) save();
+    return { ok: db.waitlist.length !== prima };
+  }
+
+  /* Chi aspetta per un certo giorno. Il barbiere conta solo se l'iscritto ne
+     aveva chiesto uno preciso: chi ha scritto "primo disponibile" va avvisato
+     qualunque poltrona si liberi. */
+  function inAttesaPer(dataKey, barberId) {
+    return db.waitlist.filter(function (w) {
+      return w.dataKey === dataKey && (!w.barberId || !barberId || w.barberId === barberId);
+    });
+  }
+
   function upsertLocale(coll, rec) {
     var esistente = rec.id ? byId(db[coll], rec.id) : null;
     if (esistente) Object.keys(rec).forEach(function (k) { esistente[k] = rec[k]; });
@@ -521,6 +617,17 @@
       if (stato.settings.giorniAvanti === 30) stato.settings.giorniAvanti = 365;
       stato.schema = 3;
     }
+    /* Lista d'attesa introdotta dopo: uno stato salvato prima non ha il campo,
+       e senza questo `push` su undefined esploderebbe alla prima iscrizione. */
+    if (!(stato.schema >= 4)) {
+      if (!stato.waitlist) stato.waitlist = [];
+      stato.schema = 4;
+    }
+    if (!Array.isArray(stato.waitlist)) stato.waitlist = [];
+    /* Un'attesa per una data passata non serve più a nessuno: si toglie qui,
+       una volta per avvio, così la lista non cresce all'infinito. */
+    var oggiKey = dayKey(new Date());
+    stato.waitlist = stato.waitlist.filter(function (w) { return w.dataKey >= oggiKey; });
     /* Il listino vive dentro lo stato salvato, non viene riletto dal seed a
        ogni avvio: altrimenti il negozio non potrebbe mai cambiare un prezzo dal
        gestionale. Si aggiornano solo le voci nostre, riconosciute per id: i
@@ -660,6 +767,7 @@
 
     // letture: sincrone, servono a disegnare la UI senza andare in rete
     slotsFor: slotsFor, totali: totali, servizi: servizi, validaSelezione: validaSelezione,
+    inAttesaPer: inAttesaPer,
     slotLibero: slotLibero, dentroOrario: dentroOrario,
     normalizzaTelefono: normalizzaTelefono, telefonoValido: telefonoValido,
     prenotazioniDel: prenotazioniDel, prenotazioniFuture: prenotazioniFuture,
@@ -673,6 +781,8 @@
       aggiornaPrenotazione: aggiornaPrenotazioneLocale,
       cancellaConCodice: cancellaConCodiceLocale,
       cercaConCodice: cercaConCodiceLocale,
+      iscriviListaAttesa: iscriviListaAttesaLocale,
+      rimuoviListaAttesa: rimuoviListaAttesaLocale,
       upsert: upsertLocale,
       rimuovi: rimuoviLocale,
       cambiaStato: cambiaStatoLocale
@@ -693,6 +803,14 @@
 
   API.aggiornaPrenotazione = function (id, patch) {
     return chiama('PATCH', '/api/prenotazioni/' + encodeURIComponent(id), patch);
+  };
+
+  API.iscriviListaAttesa = function (p) {
+    return chiama('POST', '/api/lista-attesa', p);
+  };
+
+  API.rimuoviListaAttesa = function (id) {
+    return chiama('DELETE', '/api/lista-attesa/' + encodeURIComponent(id));
   };
 
   API.cancellaConCodice = function (codice, telefono) {

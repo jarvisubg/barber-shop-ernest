@@ -494,9 +494,44 @@
                 '<button class="btn btn-sm" data-ev="' + b.id + '">Apri</button>' +
               '</div></td></tr>';
           }).join('') + '</tbody></table>'
-        : '<div class="card muted">Nessuna prenotazione in questa giornata.</div>');
+        : '<div class="card muted">Nessuna prenotazione in questa giornata.</div>') +
+      bloccoAttesa(key);
 
     collegaCalendario($('#tab-lista'));
+    collegaAttesa($('#tab-lista'));
+  }
+
+  /* Chi aspetta un posto per il giorno guardato. Sta qui e non in una scheda
+     sua perché è utile esattamente quando si guarda quella giornata: se una
+     disdetta libera un orario, la persona da richiamare è a due centimetri. */
+  function bloccoAttesa(key) {
+    var lista = (E.db.waitlist || []).filter(function (w) { return w.dataKey === key; });
+    if (!lista.length) return '';
+    return '<h2 style="margin:24px 0 8px">In attesa di un posto (' + lista.length + ')</h2>' +
+      '<table><thead><tr><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Iscritto il</th><th></th></tr></thead><tbody>' +
+      lista.map(function (w) {
+        return '<tr><td>' + esc(w.nome) + ' ' + esc(w.cognome) +
+            '<br><a class="muted" href="tel:' + esc(w.telefono) + '">' + esc(w.telefono) + '</a></td>' +
+          '<td>' + esc((w.servizi || []).map(function (s) { return s.nome; }).join(', ') || '—') + '</td>' +
+          '<td>' + esc(w.barberId ? ((barbiere(w.barberId) || {}).nome || '—') : 'Primo disponibile') + '</td>' +
+          '<td class="muted">' + esc(w.createdAt ? E.labelData(E.at(w.createdAt.slice(0, 10), 0)) : '—') + '</td>' +
+          '<td><div class="stack">' +
+            '<a class="btn btn-sm" href="tel:' + esc(w.telefono) + '">Chiama</a>' +
+            '<button class="btn btn-sm" data-attesa="' + esc(w.id) + '">Fatto</button>' +
+          '</div></td></tr>';
+      }).join('') + '</tbody></table>' +
+      '<p class="muted" style="margin-top:8px">"Fatto" toglie la persona dalla lista. ' +
+      'Le iscrizioni spariscono da sole quando la data passa.</p>';
+  }
+
+  function collegaAttesa(radice) {
+    Array.prototype.forEach.call(radice.querySelectorAll('[data-attesa]'), function (b) {
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        E.rimuoviListaAttesa(b.dataset.attesa).then(function () { render(); },
+          function (e) { b.disabled = false; alert(e.message); });
+      });
+    });
   }
 
   /* --------------------------------------------------------- modale base */

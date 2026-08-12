@@ -148,6 +148,14 @@
         return E.slotsFor(key, S.barberId === null ? null : S.barberId, durata);
       }
 
+      /* Orari che esisterebbero se nessuno avesse prenotato. Serve a capire se
+         un giorno senza posti è pieno o chiuso: sul pieno si può aspettare una
+         disdetta, sul chiuso no. */
+      function slotStrutturali(key, durata) {
+        return E.slotsFor(key, S.barberId === null ? null : S.barberId, durata,
+          { soloStruttura: true });
+      }
+
       /* Primo giorno con posto a partire da `da`. Si ferma appena lo trova:
          scorrere tutto l'orizzonte a ogni render costerebbe 365 calcoli di
          slot per un'informazione che serve solo quando non c'è niente libero. */
@@ -177,14 +185,25 @@
 
         var giorni = [];
         for (var d = dal; d <= al; d = E.addDays(d, 1)) {
-          giorni.push({ d: d, key: E.dayKey(d), liberi: slotDi(E.dayKey(d), durata) });
+          var k = E.dayKey(d);
+          var liberi = slotDi(k, durata);
+          /* Il calcolo strutturale si fa solo sui giorni senza posti: sugli
+             altri sarebbe lavoro sprecato a ogni render della striscia. */
+          giorni.push({
+            d: d, key: k, liberi: liberi,
+            pieno: liberi.length === 0 && slotStrutturali(k, durata).length > 0
+          });
         }
 
         /* La data scelta deve stare nel mese guardato: altrimenti sotto la
-           striscia comparirebbero gli orari di un giorno che non si vede. */
+           striscia comparirebbero gli orari di un giorno che non si vede.
+           Se non c'è niente di libero si punta comunque su un giorno pieno,
+           così lo stato vuoto può offrire la lista d'attesa invece di lasciare
+           la schermata muta. */
         var scelto = giorni.filter(function (g) { return g.key === S.dataKey; })[0];
         if (!scelto) {
-          scelto = giorni.filter(function (g) { return g.liberi.length; })[0] || null;
+          scelto = giorni.filter(function (g) { return g.liberi.length; })[0] ||
+            giorni.filter(function (g) { return g.pieno; })[0] || null;
           S.dataKey = scelto ? scelto.key : null;
         }
 
@@ -198,8 +217,12 @@
 
         var strip = giorni.map(function (g) {
           var sel = g.key === S.dataKey;
+          /* Un giorno pieno resta cliccabile: è l'unico modo per arrivare alla
+             lista d'attesa. Disabilitato resta solo ciò su cui non si può fare
+             niente — negozio chiuso, ferie, festività. */
           return '<button class="bk-day" type="button" data-act="giorno" data-key="' + g.key + '"' +
-            ' aria-pressed="' + sel + '"' + (g.liberi.length ? '' : ' disabled') + '>' +
+            ' aria-pressed="' + sel + '"' + (g.pieno ? ' data-pieno="true"' : '') +
+            (g.liberi.length || g.pieno ? '' : ' disabled') + '>' +
             '<span class="bk-day-dow">' + E.GIORNI[E.weekday(g.d)].slice(0, 3) + '</span>' +
             '<span class="bk-day-num">' + g.d.getDate() + '</span>' +
             '<span class="bk-day-mon">' + E.MESI[g.d.getMonth()].slice(0, 3) + '</span></button>';
@@ -214,7 +237,9 @@
           var prossimo = primoLibero(scelto ? E.addDays(scelto.d, 1) : dal, limite, durata);
           corpo = '<div class="bk-empty">' +
             '<b>' + (scelto
-              ? 'Completamente prenotato in questa data.'
+              // la data va ripetuta: la striscia scorre e il riquadro scelto
+              // può restare fuori dallo schermo su telefono
+              ? esc(E.labelData(scelto.d)) + ': completamente prenotato.'
               // "in agosto" e non "a agosto": regge tutti i mesi senza eufonia
               : 'Nessun orario libero in ' + esc(E.MESI[mese.getMonth()]) + '.') + '</b>' +
             (prossimo
@@ -223,6 +248,12 @@
                 prossimo.key + '">Vai alla prossima data disponibile</button>'
               : '<span>Nessuna disponibilità fino al ' + esc(E.labelData(limite)) + '. ' +
                 'Chiama il negozio allo ' + esc(E.db.settings.telefonoLabel) + '.</span>') +
+            /* La lista d'attesa si offre solo su un giorno preciso: senza una
+               data scelta non ci sarebbe niente per cui aspettare. */
+            (scelto
+              ? '<button class="bk-cta bk-cta-ghost" type="button" data-act="attesa" data-key="' +
+                scelto.key + '">Iscriviti alla lista d\'attesa</button>'
+              : '') +
             '</div>';
         } else {
           var fasce = [
