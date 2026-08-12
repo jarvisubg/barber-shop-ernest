@@ -229,7 +229,7 @@
             (righe.length === 1 ? ' persona' : ' persone') +
             (liberi ? ' · ' + liberi + ' orari ora liberi: richiamale' : ' · giorno ancora pieno') +
             ')</span></h2>' +
-          '<table><thead><tr><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Iscritto il</th><th></th></tr></thead><tbody>' +
+          '<table class="t-attesa"><thead><tr><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Iscritto il</th><th></th></tr></thead><tbody>' +
           righe.map(function (w) {
             return '<tr><td>' + esc(w.nome) + ' ' + esc(w.cognome) +
                 '<br><a class="muted" href="tel:' + esc(w.telefono) + '">' + esc(w.telefono) + '</a></td>' +
@@ -533,7 +533,7 @@
       '</div>' +
       avvisoProssimi() +
       (pren.length
-        ? '<table><thead><tr><th>Ora</th><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Tot.</th><th>Stato</th><th></th></tr></thead><tbody>' +
+        ? '<table class="t-pren"><thead><tr><th>Ora</th><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Tot.</th><th>Stato</th><th></th></tr></thead><tbody>' +
           pren.map(function (b) {
             return '<tr><td class="num">' + b.inizio.slice(11) + '<br><span class="muted" style="font-size:.72rem">' +
               E.durataLabel(b.durata) + '</span></td>' +
@@ -565,7 +565,7 @@
     var lista = (E.db.waitlist || []).filter(function (w) { return w.dataKey === key; });
     if (!lista.length) return '';
     return '<h2 style="margin:24px 0 8px">In attesa di un posto (' + lista.length + ')</h2>' +
-      '<table><thead><tr><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Iscritto il</th><th></th></tr></thead><tbody>' +
+      '<table class="t-attesa"><thead><tr><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Iscritto il</th><th></th></tr></thead><tbody>' +
       lista.map(function (w) {
         return '<tr><td>' + esc(w.nome) + ' ' + esc(w.cognome) +
             '<br><a class="muted" href="tel:' + esc(w.telefono) + '">' + esc(w.telefono) + '</a></td>' +

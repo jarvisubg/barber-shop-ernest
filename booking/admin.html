@@ -172,6 +172,76 @@
   .login form { width: min(100%, 340px); }
   .login h1 { font-size: 2rem; margin-bottom: 6px; }
   .login p { color: var(--muted); margin: 0 0 22px; font-size: .9rem; }
+
+  /* ---------------------------------------------------------- telefono
+
+     Il gestionale si usa quasi sempre col telefono in mano, spesso con un
+     cliente sulla poltrona. Qui stanno le regole che valgono solo lì. */
+
+  /* iOS ingrandisce la pagina da solo quando si tocca un campo con testo sotto
+     i 16px, e dopo NON torna indietro: resta zoomata e scorre di lato. I campi
+     erano a 15,2px (.95rem), quindi succedeva a ogni tocco. Si risolve con la
+     dimensione del testo, non disattivando lo zoom: `user-scalable=no` toglie
+     anche l'ingrandimento voluto — a chi non ci vede bene serve — e da iOS 10
+     Safari lo ignora comunque. */
+  /* Vale su QUALSIASI schermo touch, anche un tablet largo: lì lo zoom
+     automatico scatta uguale. Non è legata alla larghezza. */
+  @media (pointer: coarse), (max-width: 900px) {
+    input[type=text], input[type=tel], input[type=date], input[type=time],
+    input[type=number], input[type=password], input[type=email], select, textarea {
+      font-size: 16px;
+    }
+
+    /* Bersagli da dito: 32px si sbagliano, soprattutto "Fatto" accanto a
+       "Chiama", che sono due azioni molto diverse. */
+    .btn { min-height: 44px; }
+    .btn-sm { min-height: 40px; padding: 0 14px; font-size: .7rem; }
+    .stack { gap: 8px; }
+  }
+
+  /* Il layout a schede invece dipende solo dalla larghezza: su un portatile con
+     schermo touch da 1440px una tabella ci sta benissimo, e trasformarla in
+     schede sarebbe un peggioramento. */
+  @media (max-width: 900px) {
+
+    /* Una tabella a sette colonne non ci sta in un telefono: facendola scorrere
+       di lato il pulsante "Chiama", che è la cosa per cui si apre il
+       gestionale, finisce fuori schermo. Ogni riga diventa una scheda, così si
+       scorre solo in verticale e i pulsanti sono sempre raggiungibili. */
+    table { display: block; width: 100%; }
+    thead { display: none; }
+    tbody, tr { display: block; width: 100%; }
+    tr { border: 1px solid var(--line); padding: 12px 14px; margin-bottom: 10px; }
+    td { display: block; border: 0; padding: 2px 0; white-space: normal; }
+    td:empty { display: none; }
+    /* L'ora in cima e grossa: è il primo dato che si cerca scorrendo. */
+    td:first-child { font: 800 1.15rem/1.1 var(--display); margin-bottom: 2px; }
+    td .stack { margin-top: 10px; }
+
+    /* Una giornata piena sono venti schede: senza compattarle diventano nove
+       schermate di scorrimento per arrivare al pomeriggio. Prezzo e stato non
+       meritano una riga ciascuno — vanno in alto a destra, dove non rubano
+       altezza. Le due tabelle hanno colonne diverse, per questo la posizione è
+       agganciata alla classe e non al numero della cella. */
+    .t-pren tr { position: relative; padding-right: 96px; }
+    .t-pren td:nth-child(5) {
+      position: absolute; top: 10px; right: 14px;
+      font: 800 1.15rem/1.1 var(--display);
+    }
+    .t-pren td:nth-child(6) { position: absolute; top: 34px; right: 14px; text-align: right; }
+
+    .cal-title { font-size: 1.25rem; }
+    .totale { font-size: 1.3rem; }
+  }
+
+  /* Niente ingrandimento automatico del testo quando si gira il telefono. */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+  /* Rete di sicurezza: nessun elemento può far scorrere la pagina in
+     orizzontale. Le eccezioni che DEVONO scorrere (tabelle, strisce di schede)
+     lo fanno dentro il proprio riquadro. */
+  body { overflow-x: hidden; }
+  img, table, pre { max-width: 100%; }
 </style>
 </head>
 <body>
