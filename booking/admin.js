@@ -189,7 +189,64 @@
 
   A.viste.calendario = renderCalendario;
   A.viste.lista = renderLista;
+  A.viste.attesa = renderAttesaTutte;
   A.render = render;
+
+  /* ------------------------------------------------------- lista d'attesa */
+
+  /* Tutte le attese in un posto solo, raggruppate per giorno. Nella "Lista del
+     giorno" si vedono solo quelle della data guardata: qui si risponde alla
+     domanda diversa "chi devo richiamare, in generale". */
+  function renderAttesaTutte() {
+    var tutte = (E.db.waitlist || []).slice().sort(function (a, b) {
+      return a.dataKey.localeCompare(b.dataKey) || (a.createdAt || '').localeCompare(b.createdAt || '');
+    });
+
+    if (!tutte.length) {
+      $('#tab-attesa').innerHTML =
+        '<div class="cal-head"><span class="cal-title">Lista d\'attesa</span></div>' +
+        '<div class="card muted">Nessuno in attesa. Le iscrizioni compaiono qui quando un cliente ' +
+        'trova il giorno che voleva pieno o chiuso e lascia il numero.</div>';
+      return;
+    }
+
+    /* Raggruppate per giorno: è così che Ernest le usa — "chi aspetta per
+       sabato" è la domanda vera, non "chi si è iscritto per primo". */
+    var perGiorno = {};
+    tutte.forEach(function (w) { (perGiorno[w.dataKey] = perGiorno[w.dataKey] || []).push(w); });
+
+    $('#tab-attesa').innerHTML =
+      '<div class="cal-head">' +
+        '<span class="cal-title">Lista d\'attesa</span>' +
+        '<div><span class="muted" style="font-size:.7rem;letter-spacing:.14em;text-transform:uppercase">Persone</span>' +
+        '<div class="totale">' + tutte.length + '</div></div>' +
+      '</div>' +
+      Object.keys(perGiorno).sort().map(function (key) {
+        var righe = perGiorno[key];
+        var liberi = E.slotsFor(key, null, 30).length;
+        return '<h2 style="margin:24px 0 8px">' + esc(E.labelData(E.at(key, 0))) +
+            ' <span class="muted" style="font-size:.8rem">(' + righe.length +
+            (righe.length === 1 ? ' persona' : ' persone') +
+            (liberi ? ' · ' + liberi + ' orari ora liberi: richiamale' : ' · giorno ancora pieno') +
+            ')</span></h2>' +
+          '<table><thead><tr><th>Cliente</th><th>Servizi</th><th>Barbiere</th><th>Iscritto il</th><th></th></tr></thead><tbody>' +
+          righe.map(function (w) {
+            return '<tr><td>' + esc(w.nome) + ' ' + esc(w.cognome) +
+                '<br><a class="muted" href="tel:' + esc(w.telefono) + '">' + esc(w.telefono) + '</a></td>' +
+              '<td>' + esc((w.servizi || []).map(function (s) { return s.nome; }).join(', ') || '—') + '</td>' +
+              '<td>' + esc(w.barberId ? ((barbiere(w.barberId) || {}).nome || '—') : 'Primo disponibile') + '</td>' +
+              '<td class="muted">' + esc(w.createdAt ? E.labelData(E.at(w.createdAt.slice(0, 10), 0)) : '—') + '</td>' +
+              '<td><div class="stack">' +
+                '<a class="btn btn-sm" href="tel:' + esc(w.telefono) + '">Chiama</a>' +
+                '<button class="btn btn-sm" data-attesa="' + esc(w.id) + '">Fatto</button>' +
+              '</div></td></tr>';
+          }).join('') + '</tbody></table>';
+      }).join('') +
+      '<p class="muted" style="margin-top:12px">"Fatto" toglie la persona dalla lista. ' +
+      'Le iscrizioni per una data passata spariscono da sole.</p>';
+
+    collegaAttesa($('#tab-attesa'));
+  }
 
   /* ---------------------------------------------------------- calendario */
 

@@ -43,6 +43,7 @@
     return {
       vista: 'prenota',        // 'prenota' | 'gestisci' | 'attesa'
       attesaKey: null,         // giorno pieno per cui si aspetta un posto
+      attesaStato: null,       // 'pieno' (disdetta) | 'ferie' (riapertura)
       esitoAttesa: null,
       step: 0,
       catAttiva: 'tutti',      // 'tutti' = listino intero, evidenza in cima
@@ -250,6 +251,7 @@
 
     if (act === 'attesa') {
       S.attesaKey = b.dataset.key;
+      S.attesaStato = b.dataset.stato || 'pieno';
       S.esitoAttesa = null;
       S.errore = null;
       S.vista = 'attesa';
@@ -621,7 +623,9 @@
           '<small>' + esc(E.labelData(d)) + '</small></div>' +
         '<p class="bk-sub">' + (S.esitoAttesa.giaIscritto
           ? 'Eri già in lista per questo giorno: non ti abbiamo aggiunto due volte.'
-          : 'Se si libera un posto ti chiamiamo noi al ' + esc(S.esitoAttesa.telefono) + '. ' +
+          : (S.attesaStato === 'ferie'
+              ? 'Ti chiamiamo noi al ' + esc(S.esitoAttesa.telefono) + ' appena torniamo disponibili. '
+              : 'Se si libera un posto ti chiamiamo noi al ' + esc(S.esitoAttesa.telefono) + '. ') +
             'Non è una prenotazione: l\'appuntamento resta da fissare quando ti sentiamo.') + '</p>' +
         '<div class="bk-actions">' +
           '<a href="tel:' + TELEFONO + '">Chiama ' + esc(TELEFONO_LABEL) + '</a>' +
@@ -631,8 +635,11 @@
         '<button class="bk-link" type="button" data-act="chiudi">Torna al sito</button>';
     } else {
       elH.textContent = 'Ti avvisiamo noi.';
-      corpo = '<p class="bk-sub">Questo giorno è pieno. Lasciaci il numero: se qualcuno disdice, ' +
-          'ti chiamiamo prima di rimettere l\'orario online.</p>' +
+      corpo = '<p class="bk-sub">' + (S.attesaStato === 'ferie'
+          ? 'In questa data non lavoriamo. Lasciaci il numero: ti chiamiamo appena ' +
+            'torniamo disponibili, senza che tu debba ricontrollare il sito.'
+          : 'Questo giorno è pieno. Lasciaci il numero: se qualcuno disdice, ' +
+            'ti chiamiamo prima di rimettere l\'orario online.') + '</p>' +
         '<dl class="bk-recap">' +
           '<div class="bk-recap-row"><dt>Giorno</dt><dd>' + esc(E.labelData(d)) + '</dd></div>' +
           '<div class="bk-recap-row"><dt>Barbiere</dt><dd>' +

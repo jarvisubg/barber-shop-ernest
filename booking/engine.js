@@ -116,17 +116,28 @@
      vengono allargate di `buffer` minuti su entrambi i lati: così fra due
      appuntamenti resta sempre almeno il buffer, senza doppio conteggio.
      Ferie e chiusure sono blocchi netti, senza buffer. */
-  function busyRanges(barberId, key, soloStruttura) {
+  /* I due interruttori servono a distinguere TRE situazioni che dall'esterno
+     sembrano una sola ("non ci sono orari"), ma per il cliente sono diverse:
+
+       nessun interruttore  → orari liberi davvero prenotabili
+       senzaPrenotazioni    → il negozio lavora, ma è tutto preso: PIENO,
+                              una disdetta può liberare un posto
+       + senzaBlocchi       → resta solo l'orario di lavoro: se sparisce anche
+                              quello il barbiere quel giorno non lavora mai
+                              (domenica), altrimenti è una chiusura che finisce
+                              (ferie, festività)
+
+     Sul pieno e sulla chiusura temporanea la lista d'attesa ha senso; sul
+     giorno in cui non si lavora mai non c'è niente da aspettare. */
+  function busyRanges(barberId, key, opts) {
+    opts = opts || {};
     var giornoIn = at(key, 0), giornoFin = at(key, 24 * 60);
     var buf = db.settings.buffer * 60000;
     var out = [];
 
-    /* `soloStruttura` lascia fuori gli appuntamenti e tiene ferie e chiusure:
-       serve a distinguere un giorno PIENO (il negozio lavora, gli orari sono
-       stati presi tutti) da un giorno CHIUSO. Sul primo ha senso offrire la
-       lista d'attesa, perché una disdetta può liberare un posto; sul secondo
-       non c'è niente da aspettare. */
-    if (!soloStruttura) db.bookings.forEach(function (b) {
+    if (opts.senzaBlocchi) return out;
+
+    if (!opts.senzaPrenotazioni) db.bookings.forEach(function (b) {
       if (b.stato === 'cancellata' || b.barberId !== barberId) return;
       var s = new Date(parse(b.inizio).getTime() - buf);
       var e = new Date(parse(b.fine).getTime() + buf);
@@ -162,7 +173,10 @@
 
     lista.forEach(function (b) {
       if (!b || (!b.attivo && !opts.includiInattivi)) return;
-      var busy = busyRanges(b.id, key, opts.soloStruttura);
+      var busy = busyRanges(b.id, key, {
+        senzaPrenotazioni: opts.soloStruttura || opts.soloOrari,
+        senzaBlocchi: opts.soloOrari
+      });
       db.workingHours.forEach(function (f) {
         if (f.barberId !== b.id || f.giorno !== wd) return;
         var fi = toMin(f.inizio), ff = toMin(f.fine);

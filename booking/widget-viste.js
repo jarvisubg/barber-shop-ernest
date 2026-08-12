@@ -148,12 +148,17 @@
         return E.slotsFor(key, S.barberId === null ? null : S.barberId, durata);
       }
 
-      /* Orari che esisterebbero se nessuno avesse prenotato. Serve a capire se
-         un giorno senza posti è pieno o chiuso: sul pieno si può aspettare una
-         disdetta, sul chiuso no. */
-      function slotStrutturali(key, durata) {
-        return E.slotsFor(key, S.barberId === null ? null : S.barberId, durata,
-          { soloStruttura: true });
+      /* Un giorno senza orari liberi può essere tre cose diverse, e al cliente
+         vanno dette in tre modi diversi:
+           pieno    → il negozio lavora ma è tutto preso: una disdetta libera
+           ferie    → chiusura che finisce: si può essere avvisati alla riapertura
+           mai      → quel giorno non si lavora (domenica): non c'è niente da fare
+         Il calcolo si fa solo sui giorni senza posti, mai sugli altri. */
+      function statoGiorno(key, durata) {
+        var b = S.barberId === null ? null : S.barberId;
+        if (E.slotsFor(key, b, durata, { soloStruttura: true }).length) return 'pieno';
+        if (E.slotsFor(key, b, durata, { soloOrari: true }).length) return 'ferie';
+        return 'mai';
       }
 
       /* Primo giorno con posto a partire da `da`. Si ferma appena lo trova:
@@ -187,11 +192,9 @@
         for (var d = dal; d <= al; d = E.addDays(d, 1)) {
           var k = E.dayKey(d);
           var liberi = slotDi(k, durata);
-          /* Il calcolo strutturale si fa solo sui giorni senza posti: sugli
-             altri sarebbe lavoro sprecato a ogni render della striscia. */
           giorni.push({
             d: d, key: k, liberi: liberi,
-            pieno: liberi.length === 0 && slotStrutturali(k, durata).length > 0
+            stato: liberi.length ? 'libero' : statoGiorno(k, durata)
           });
         }
 
@@ -203,7 +206,7 @@
         var scelto = giorni.filter(function (g) { return g.key === S.dataKey; })[0];
         if (!scelto) {
           scelto = giorni.filter(function (g) { return g.liberi.length; })[0] ||
-            giorni.filter(function (g) { return g.pieno; })[0] || null;
+            giorni.filter(function (g) { return g.stato !== 'mai'; })[0] || null;
           S.dataKey = scelto ? scelto.key : null;
         }
 
@@ -217,12 +220,13 @@
 
         var strip = giorni.map(function (g) {
           var sel = g.key === S.dataKey;
-          /* Un giorno pieno resta cliccabile: è l'unico modo per arrivare alla
-             lista d'attesa. Disabilitato resta solo ciò su cui non si può fare
-             niente — negozio chiuso, ferie, festività. */
+          /* Pieno e ferie restano cliccabili: sono i due casi in cui il cliente
+             può ancora lasciare il numero. Si spegne solo il giorno in cui non
+             si lavora mai, dove non c'è niente da aspettare. */
           return '<button class="bk-day" type="button" data-act="giorno" data-key="' + g.key + '"' +
-            ' aria-pressed="' + sel + '"' + (g.pieno ? ' data-pieno="true"' : '') +
-            (g.liberi.length || g.pieno ? '' : ' disabled') + '>' +
+            ' aria-pressed="' + sel + '"' +
+            (g.stato === 'libero' ? '' : ' data-stato="' + g.stato + '"') +
+            (g.stato === 'mai' ? ' disabled' : '') + '>' +
             '<span class="bk-day-dow">' + E.GIORNI[E.weekday(g.d)].slice(0, 3) + '</span>' +
             '<span class="bk-day-num">' + g.d.getDate() + '</span>' +
             '<span class="bk-day-mon">' + E.MESI[g.d.getMonth()].slice(0, 3) + '</span></button>';
@@ -235,11 +239,16 @@
              tutto il mese non c'è niente. Il salto porta anche la striscia sul
              mese giusto — lo fa il gestore di `giorno` in widget.js. */
           var prossimo = primoLibero(scelto ? E.addDays(scelto.d, 1) : dal, limite, durata);
+          var chiPerFerie = S.barberId
+            ? (E.byId(E.db.barbers, S.barberId) || {}).nome
+            : 'Il negozio';
           corpo = '<div class="bk-empty">' +
             '<b>' + (scelto
               // la data va ripetuta: la striscia scorre e il riquadro scelto
               // può restare fuori dallo schermo su telefono
-              ? esc(E.labelData(scelto.d)) + ': completamente prenotato.'
+              ? (scelto.stato === 'ferie'
+                ? esc(E.labelData(scelto.d)) + ': ' + esc(chiPerFerie) + ' non c\'è.'
+                : esc(E.labelData(scelto.d)) + ': completamente prenotato.')
               // "in agosto" e non "a agosto": regge tutti i mesi senza eufonia
               : 'Nessun orario libero in ' + esc(E.MESI[mese.getMonth()]) + '.') + '</b>' +
             (prossimo
@@ -252,7 +261,9 @@
                data scelta non ci sarebbe niente per cui aspettare. */
             (scelto
               ? '<button class="bk-cta bk-cta-ghost" type="button" data-act="attesa" data-key="' +
-                scelto.key + '">Iscriviti alla lista d\'attesa</button>'
+                scelto.key + '" data-stato="' + esc(scelto.stato) + '">' +
+                (scelto.stato === 'ferie' ? 'Avvisami quando torna disponibile'
+                  : 'Iscriviti alla lista d\'attesa') + '</button>'
               : '') +
             '</div>';
         } else {

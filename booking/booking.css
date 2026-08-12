@@ -452,13 +452,15 @@ body.bk-locked { overflow: hidden; }
 .bk-day[aria-pressed="true"] .bk-day-mon { color: rgba(9, 10, 11, .62); }
 .bk-day[disabled] { opacity: .26; cursor: not-allowed; }
 
-/* Giorno pieno: cliccabile — porta alla lista d'attesa — ma non deve sembrare
-   libero. Mezza via fra il disponibile e il chiuso, con il numero barrato così
-   la differenza si legge anche senza colore. */
-.bk-day[data-pieno] { opacity: .55; border-style: dashed; }
-.bk-day[data-pieno] .bk-day-num { text-decoration: line-through; text-decoration-thickness: 2px; }
-.bk-day[data-pieno][aria-pressed="true"] { opacity: 1; border-style: solid; }
-.bk-day[data-pieno][aria-pressed="true"] .bk-day-num { text-decoration: none; }
+/* Pieno e ferie: cliccabili — portano alla lista d'attesa — ma non devono
+   sembrare liberi. Mezza via fra il disponibile e il chiuso, con il numero
+   barrato così la differenza si legge anche senza distinguere i colori. */
+.bk-day[data-stato="pieno"],
+.bk-day[data-stato="ferie"] { opacity: .55; border-style: dashed; }
+.bk-day[data-stato="pieno"] .bk-day-num,
+.bk-day[data-stato="ferie"] .bk-day-num { text-decoration: line-through; text-decoration-thickness: 2px; }
+.bk-day[data-stato][aria-pressed="true"] { opacity: 1; border-style: solid; }
+.bk-day[data-stato][aria-pressed="true"] .bk-day-num { text-decoration: none; }
 
 /* Nello stato vuoto i pulsanti stanno uno sotto l'altro e devono essere
    raggiungibili col pollice: a tutta larghezza, non larghi quanto il testo. */
