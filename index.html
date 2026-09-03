@@ -73,6 +73,10 @@
       scroll-padding-top: calc(var(--header-h) + 20px);
       background: var(--ink);
       overscroll-behavior-y: none;
+      /* Il doppio tap resta un gesto involontario mentre si scorre per
+         prenotare: disattiva lo zoom-al-doppio-tap senza toccare il pizzico
+         a due dita, che deve restare per chi ne ha bisogno per leggere. */
+      touch-action: manipulation;
     }
     body {
       margin: 0;

@@ -28,7 +28,10 @@
     --body: "Saira", "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
-  html { background: var(--ink); overscroll-behavior-y: none; }
+  /* Il doppio tap è un gesto involontario mentre si tocca il calendario o si
+     compila un form: disattiva lo zoom-al-doppio-tap senza toccare il
+     pizzico a due dita, che deve restare per chi ne ha bisogno. */
+  html { background: var(--ink); overscroll-behavior-y: none; touch-action: manipulation; }
   body { margin: 0; background: var(--ink); color: var(--paper); font: 400 15px/1.5 var(--body); overscroll-behavior-y: none; }
   /* deve battere i display: grid/flex dichiarati sotto, altrimenti l'attributo hidden non nasconde nulla */
   [hidden] { display: none !important; }
