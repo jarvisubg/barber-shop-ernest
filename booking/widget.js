@@ -540,12 +540,24 @@
       'END:VEVENT', 'END:VCALENDAR'
     ].join('\r\n');
 
+    /* Safari su iOS ignora l'attributo "download" sui data: URI: il tocco
+       apriva una scheda con il testo grezzo dell'ICS invece di proporre
+       "Aggiungi a Calendario". Con la navigazione diretta sullo stesso data:
+       URI, Safari riconosce il MIME text/calendar e apre la scheda nativa. */
+    var iOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+    if (iOS) {
+      location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+      return;
+    }
+
+    var url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
     var a = document.createElement('a');
-    a.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    a.href = url;
     a.download = 'ernest-' + b.codice + '.ics';
     document.body.appendChild(a);
     a.click();
     a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
   /* ------------------------------------------------------- gestione/disdetta */

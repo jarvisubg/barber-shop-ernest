@@ -379,7 +379,18 @@
       '<div class="card"><h3>Verifiche automatiche</h3>' +
       '<p class="muted">Esegue i controlli di correttezza su disponibilità, buffer, ferie e disdette. ' +
       'Il risultato compare qui e nella console.</p>' +
-      '<button class="btn" data-check>Esegui verifiche</button><div data-check-out style="margin-top:14px"></div></div>';
+      '<button class="btn" data-check>Esegui verifiche</button><div data-check-out style="margin-top:14px"></div></div>' +
+      '<div class="card"><h3>Cambia password</h3>' +
+      '<p class="muted">La password serve per entrare nel gestionale. Cambiala ogni volta che vuoi, ' +
+      'senza chiedere a nessuno.</p>' +
+      '<label class="f"><span>Password attuale</span>' +
+        '<input type="password" name="pwVecchia" autocomplete="current-password"></label>' +
+      '<label class="f"><span>Nuova password</span>' +
+        '<input type="password" name="pwNuova" autocomplete="new-password"></label>' +
+      '<label class="f"><span>Ripeti la nuova password</span>' +
+        '<input type="password" name="pwConferma" autocomplete="new-password"></label>' +
+      '<button class="btn btn-solid" data-cambia-pw>Cambia password</button>' +
+      '<p data-pw-esito style="margin-top:10px" hidden></p></div>';
 
     var box = $('#tab-impostazioni');
     box.querySelector('[data-salva]').addEventListener('click', function () {
@@ -402,6 +413,35 @@
         '<table><tbody>' + r.esiti.map(function (e) {
           return '<tr><td>' + (e.ok ? '✅' : '❌') + '</td><td>' + esc(e.nome) + '</td></tr>';
         }).join('') + '</tbody></table>';
+    });
+
+    box.querySelector('[data-cambia-pw]').addEventListener('click', function () {
+      var esito = box.querySelector('[data-pw-esito]');
+      function mostra(testo, ok) {
+        esito.hidden = false;
+        esito.textContent = testo;
+        esito.style.color = ok ? 'var(--good)' : 'var(--bad)';
+      }
+      var vecchia = box.querySelector('[name=pwVecchia]').value;
+      var nuova = box.querySelector('[name=pwNuova]').value;
+      var conferma = box.querySelector('[name=pwConferma]').value;
+      if (!vecchia || !nuova) return mostra('Compila entrambe le password.', false);
+      if (nuova !== conferma) return mostra('Le due nuove password non coincidono.', false);
+      if (nuova.length < 6) return mostra('La nuova password deve avere almeno 6 caratteri.', false);
+
+      var btn = box.querySelector('[data-cambia-pw]');
+      btn.disabled = true;
+      E.cambiaPassword(vecchia, nuova).then(function (r) {
+        btn.disabled = false;
+        if (!r.ok) return mostra(r.error || 'Password attuale errata.', false);
+        box.querySelector('[name=pwVecchia]').value = '';
+        box.querySelector('[name=pwNuova]').value = '';
+        box.querySelector('[name=pwConferma]').value = '';
+        mostra('Password cambiata. Usala dal prossimo accesso.', true);
+      }, function (e) {
+        btn.disabled = false;
+        mostra(e.message, false);
+      });
     });
   }
 })(typeof window !== 'undefined' ? window : globalThis);

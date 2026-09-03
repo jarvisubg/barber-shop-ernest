@@ -867,6 +867,13 @@
   API.usaToken = function (t) { cfg.token = t || null; };
   API.esci = function () { cfg.token = null; };
 
+  /* Il titolare cambia la password da solo, dal gestionale: vecchia per
+     verificarsi, nuova per sostituirla. Il server rilegge lo stato, ma qui
+     non serve — cambiaPassword non tocca prenotazioni o impostazioni. */
+  API.cambiaPassword = function (vecchia, nuova) {
+    return chiama('POST', '/api/cambia-password', { vecchia: vecchia, nuova: nuova });
+  };
+
   /* Esegue fn su un database vuoto e usa e getta: nessuna scrittura su disco,
      stato reale ripristinato in ogni caso. Lo usa selfcheck.js. */
   API.ambienteDiProva = function (fn) {
