@@ -524,40 +524,16 @@
     }
   }
 
+  /* Il file .ics lo genera il server (stesso codice di engine.js, isomorfo):
+     un data:/blob: URI creato nel browser dipende da comportamenti che
+     Safari e Chrome cambiano da una versione all'altra — è già successo che
+     smettesse di funzionare su iOS senza che il codice cambiasse. Un URL
+     vero con l'header Content-Type giusto è l'unica versione che ogni
+     sistema (iOS, Android, desktop) riconosce allo stesso modo. */
   function scaricaIcs() {
     var b = S.booking;
-    function fmt(s) { return s.replace(/[-:]/g, '') + '00'; }
-    var ics = [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Barber Shop Ernest//IT',
-      'BEGIN:VEVENT',
-      'UID:' + b.codice + '@barberernest',
-      'DTSTAMP:' + fmt(E.stamp(new Date())),
-      'DTSTART:' + fmt(b.inizio),
-      'DTEND:' + fmt(b.fine),
-      'SUMMARY:Barber Shop Ernest — ' + b.servizi.map(function (s) { return s.nome; }).join(', '),
-      'LOCATION:Corso Giuseppe Mazzini 128\\, 48018 Faenza RA',
-      'DESCRIPTION:Codice prenotazione ' + b.codice,
-      'END:VEVENT', 'END:VCALENDAR'
-    ].join('\r\n');
-
-    /* Safari su iOS ignora l'attributo "download" sui data: URI: il tocco
-       apriva una scheda con il testo grezzo dell'ICS invece di proporre
-       "Aggiungi a Calendario". Con la navigazione diretta sullo stesso data:
-       URI, Safari riconosce il MIME text/calendar e apre la scheda nativa. */
-    var iOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-    if (iOS) {
-      location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-      return;
-    }
-
-    var url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'ernest-' + b.codice + '.ics';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    location.href = CFG.api + '/api/ics?codice=' + encodeURIComponent(b.codice) +
+      '&telefono=' + encodeURIComponent(b.telefono);
   }
 
   /* ------------------------------------------------------- gestione/disdetta */

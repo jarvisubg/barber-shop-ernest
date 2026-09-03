@@ -755,6 +755,27 @@
     });
   }
 
+  /* Testo ICS per "aggiungi al calendario". Pura per poter girare anche sul
+     server (server/stato.js): un file scaricato dal browser con un trucco
+     client-side (data:/blob: URI) dipende da comportamenti che Safari e
+     Chrome cambiano da una versione all'altra — un URL vero con l'header
+     Content-Type giusto è l'unica versione che ogni sistema riconosce. */
+  function generaIcs(b) {
+    function fmt(s) { return s.replace(/[-:]/g, '') + '00'; }
+    return [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Barber Shop Ernest//IT',
+      'BEGIN:VEVENT',
+      'UID:' + b.codice + '@barberernest',
+      'DTSTAMP:' + fmt(stamp(new Date())),
+      'DTSTART:' + fmt(b.inizio),
+      'DTEND:' + fmt(b.fine),
+      'SUMMARY:Barber Shop Ernest — ' + b.servizi.map(function (s) { return s.nome; }).join(', '),
+      'LOCATION:Corso Giuseppe Mazzini 128\\, 48018 Faenza RA',
+      'DESCRIPTION:Codice prenotazione ' + b.codice,
+      'END:VEVENT', 'END:VCALENDAR'
+    ].join('\r\n');
+  }
+
   /* --------------------------------------------------------------- export */
 
   var API = {
@@ -785,6 +806,7 @@
     slotLibero: slotLibero, dentroOrario: dentroOrario,
     normalizzaTelefono: normalizzaTelefono, telefonoValido: telefonoValido,
     prenotazioniDel: prenotazioniDel, prenotazioniFuture: prenotazioniFuture,
+    generaIcs: generaIcs,
 
     /* Logica di dominio sincrona. La usa il Worker, che è l'unico autorizzato
        a scrivere, e le verifiche automatiche. Nel browser non va chiamata:
