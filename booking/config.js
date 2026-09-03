@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — indirizzo del server delle prenotazioni.
+/* Ernest Barbershop — indirizzo del server delle prenotazioni.
 
    Unico file da toccare quando il Worker cambia indirizzo. Va caricato prima
    di engine.js.

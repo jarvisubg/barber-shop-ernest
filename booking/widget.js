@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — flusso di prenotazione pubblico.
+/* Ernest Barbershop — flusso di prenotazione pubblico.
    Si aggancia ai bottoni [data-booking-trigger] già presenti nella pagina e
    monta il riquadro d'ingresso dentro #booking-root.
 
@@ -438,7 +438,7 @@
     elCart.innerHTML =
       '<div class="bk-cart-head">' +
         '<img src="images/barber-ernest/shop-hero.webp" alt="" width="56" height="56" loading="lazy">' +
-        '<div><b>Barber Shop Ernest</b>' +
+        '<div><b>Ernest Barbershop</b>' +
         '<span>Corso Giuseppe Mazzini 128, Faenza</span></div>' +
       '</div>' +
       '<div class="bk-cart-items">' + righe + '</div>' +

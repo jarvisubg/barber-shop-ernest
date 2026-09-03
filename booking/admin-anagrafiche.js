@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — gestionale: barbieri, orari, ferie, listino, chiusure e impostazioni.
+/* Ernest Barbershop — gestionale: barbieri, orari, ferie, listino, chiusure e impostazioni.
    Si registra su ErnestAdmin, il namespace creato da admin.js. */
 (function (global) {
   'use strict';

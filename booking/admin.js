@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — gestionale: nucleo, calendario e lista del giorno.
+/* Ernest Barbershop — gestionale: nucleo, calendario e lista del giorno.
    Le schede anagrafiche e le finestre di prenotazione stanno nei moduli
    admin-anagrafiche.js e admin-prenotazioni.js, che si agganciano a
    ErnestAdmin. L'avvio è esplicito (ErnestAdmin.avvia) perché i moduli

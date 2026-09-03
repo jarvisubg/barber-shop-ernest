@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — schermate del flusso di prenotazione.
+/* Ernest Barbershop — schermate del flusso di prenotazione.
    Solo generazione di markup: lo stato e la navigazione stanno in widget.js.
    Ogni vista rilegge lo stato da ctx.stato(), perché l'oggetto viene sostituito
    a ogni nuova prenotazione. */

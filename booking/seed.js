@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — listino, anagrafiche e dati dimostrativi.
+/* Ernest Barbershop — listino, anagrafiche e dati dimostrativi.
    Separato dal motore perché è l'unica parte che cambia quando il negozio
    cambia prezzi, orari o personale. */
 (function (global, T) {

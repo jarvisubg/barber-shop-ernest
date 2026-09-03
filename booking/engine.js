@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — motore prenotazioni.
+/* Ernest Barbershop — motore prenotazioni.
    Nessuna dipendenza, nessun build step.
 
    Lo stesso file gira in due posti:
@@ -763,13 +763,13 @@
   function generaIcs(b) {
     function fmt(s) { return s.replace(/[-:]/g, '') + '00'; }
     return [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Barber Shop Ernest//IT',
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ernest Barbershop//IT',
       'BEGIN:VEVENT',
       'UID:' + b.codice + '@barberernest',
       'DTSTAMP:' + fmt(stamp(new Date())),
       'DTSTART:' + fmt(b.inizio),
       'DTEND:' + fmt(b.fine),
-      'SUMMARY:Barber Shop Ernest — ' + b.servizi.map(function (s) { return s.nome; }).join(', '),
+      'SUMMARY:Ernest Barbershop — ' + b.servizi.map(function (s) { return s.nome; }).join(', '),
       'LOCATION:Corso Giuseppe Mazzini 128\\, 48018 Faenza RA',
       'DESCRIPTION:Codice prenotazione ' + b.codice,
       'END:VEVENT', 'END:VCALENDAR'

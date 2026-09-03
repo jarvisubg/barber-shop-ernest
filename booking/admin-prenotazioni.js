@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — gestionale: scheda appuntamento e inserimento manuale.
+/* Ernest Barbershop — gestionale: scheda appuntamento e inserimento manuale.
    Si registra su ErnestAdmin, il namespace creato da admin.js. */
 (function (global) {
   'use strict';

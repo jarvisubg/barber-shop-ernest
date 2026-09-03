@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — helper di data, ora e formato.
+/* Ernest Barbershop — helper di data, ora e formato.
    Tutto in ora locale: il negozio sta a Faenza, un solo fuso.
    Le date si serializzano come "YYYY-MM-DDTHH:mm" senza UTC, così i confronti
    restano anche lessicografici ed evitano lo scarto di un'ora all'ora legale. */

@@ -1,4 +1,4 @@
-/* Barber Shop Ernest — verifiche automatiche del motore prenotazioni.
+/* Ernest Barbershop — verifiche automatiche del motore prenotazioni.
    Coprono i criteri di completamento elencati al §10 del prompt.
    Si lanciano con ErnestBooking.selfCheck() dalla console, dal pulsante
    "Esegui verifiche" nel gestionale, o aprendo una pagina con ?selfcheck.
