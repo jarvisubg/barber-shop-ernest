@@ -96,7 +96,7 @@
 
   /* le schermate dei singoli passi vivono in widget-viste.js */
   var VISTE = global.ErnestViste.crea({
-    E: E, esc: esc, totali: totali, stato: function () { return S; }
+    E: E, esc: esc, totali: totali, stato: function () { return S; }, api: CFG.api
   });
 
   /* --------------------------------------------------------------- shell */
@@ -267,7 +267,6 @@
     if (act === 'iscrivi-attesa') return iscriviAttesa();
     if (act === 'conferma') return conferma();
     if (act === 'copia') return copiaCodice(b);
-    if (act === 'ics') return scaricaIcs();
     if (act === 'cerca') return cercaPrenotazione();
     if (act === 'annulla-prenotazione') return annullaPrenotazione();
   }
@@ -522,18 +521,6 @@
     } else {
       btn.textContent = testo;
     }
-  }
-
-  /* Il file .ics lo genera il server (stesso codice di engine.js, isomorfo):
-     un data:/blob: URI creato nel browser dipende da comportamenti che
-     Safari e Chrome cambiano da una versione all'altra — è già successo che
-     smettesse di funzionare su iOS senza che il codice cambiasse. Un URL
-     vero con l'header Content-Type giusto è l'unica versione che ogni
-     sistema (iOS, Android, desktop) riconosce allo stesso modo. */
-  function scaricaIcs() {
-    var b = S.booking;
-    location.href = CFG.api + '/api/ics?codice=' + encodeURIComponent(b.codice) +
-      '&telefono=' + encodeURIComponent(b.telefono);
   }
 
   /* ------------------------------------------------------- gestione/disdetta */

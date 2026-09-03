@@ -7,7 +7,7 @@
 
   global.ErnestViste = {
     crea: function (ctx) {
-      var E = ctx.E, esc = ctx.esc, S;
+      var E = ctx.E, esc = ctx.esc, api = ctx.api, S;
       function totali() { return ctx.totali(); }
       function durataTotale() { return totali().durata; }
       function sync() { S = ctx.stato(); }
@@ -335,6 +335,13 @@
         var d = E.parse(b.inizio);
         var wa = 'https://wa.me/' + E.db.settings.telefono.replace('+', '') +
           '?text=' + encodeURIComponent('Ciao, ho prenotato con codice ' + b.codice + '.');
+        /* Deve essere un <a href> vero, non un bottone gestito da JavaScript:
+           Safari su iOS blocca in silenzio le navigazioni avviate da script
+           verso un altro dominio (location.href), ma fida sempre un tocco
+           diretto su un link — è così che riconosce il file di calendario e
+           apre la scheda nativa "Aggiungi evento" invece di non fare niente. */
+        var urlIcs = api + '/api/ics?codice=' + encodeURIComponent(b.codice) +
+          '&telefono=' + encodeURIComponent(b.telefono);
 
         return '<p class="bk-sub">' + esc(E.labelData(d)) + ' alle ' + b.inizio.slice(11) +
           ' con ' + esc(barbiere ? barbiere.nome : '') + '.</p>' +
@@ -342,7 +349,7 @@
           '<small>Salva questo codice: ti serve per disdire</small></div>' +
           '<div class="bk-actions">' +
             '<button type="button" data-act="copia">Copia codice</button>' +
-            '<button type="button" data-act="ics">Aggiungi al calendario</button>' +
+            '<a href="' + esc(urlIcs) + '">Aggiungi al calendario</a>' +
             '<a href="https://www.google.com/maps/search/?api=1&amp;query=Corso+Giuseppe+Mazzini+128%2C+48018+Faenza+RA" target="_blank" rel="noopener">Come arrivare</a>' +
             '<a href="' + wa + '" target="_blank" rel="noopener">Scrivi su WhatsApp</a>' +
           '</div>' +
