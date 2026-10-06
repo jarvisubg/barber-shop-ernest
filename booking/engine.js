@@ -762,17 +762,21 @@
      Content-Type giusto è l'unica versione che ogni sistema riconosce. */
   function generaIcs(b) {
     function fmt(s) { return s.replace(/[-:]/g, '') + '00'; }
+    /* DTSTAMP va in UTC (con la Z): l'ora locale del server non è quella di
+       Faenza. Il file deve chiudersi con un a-capo: senza, Google Calendar e
+       Outlook possono rifiutare l'importazione. */
+    var adesso = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
     return [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ernest Barbershop//IT',
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ernest Barbershop//IT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
       'BEGIN:VEVENT',
       'UID:' + b.codice + '@barberernest',
-      'DTSTAMP:' + fmt(stamp(new Date())),
+      'DTSTAMP:' + adesso,
       'DTSTART:' + fmt(b.inizio),
       'DTEND:' + fmt(b.fine),
       'SUMMARY:Ernest Barbershop — ' + b.servizi.map(function (s) { return s.nome; }).join(', '),
       'LOCATION:Corso Giuseppe Mazzini 128\\, 48018 Faenza RA',
       'DESCRIPTION:Codice prenotazione ' + b.codice,
-      'END:VEVENT', 'END:VCALENDAR'
+      'END:VEVENT', 'END:VCALENDAR', ''
     ].join('\r\n');
   }
 

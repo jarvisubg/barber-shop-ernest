@@ -343,6 +343,16 @@
         var urlIcs = api + '/api/ics?codice=' + encodeURIComponent(b.codice) +
           '&telefono=' + encodeURIComponent(b.telefono);
 
+        /* Alternativa che non scarica nessun file: funziona su qualunque
+           telefono o computer e dentro i browser di Instagram/Facebook, che
+           bloccano i download. */
+        function g(x) { return x.replace(/[-:]/g, '') + '00'; }
+        var urlGoogle = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+          '&text=' + encodeURIComponent('Ernest Barbershop — ' + b.servizi.map(function (x) { return x.nome; }).join(', ')) +
+          '&dates=' + g(b.inizio) + '/' + g(b.fine) + '&ctz=Europe/Rome' +
+          '&location=' + encodeURIComponent('Corso Giuseppe Mazzini 128, 48018 Faenza RA') +
+          '&details=' + encodeURIComponent('Codice prenotazione ' + b.codice);
+
         return '<p class="bk-sub">' + esc(E.labelData(d)) + ' alle ' + b.inizio.slice(11) +
           ' con ' + esc(barbiere ? barbiere.nome : '') + '.</p>' +
           '<div class="bk-code"><b>' + b.codice + '</b>' +
@@ -350,6 +360,7 @@
           '<div class="bk-actions">' +
             '<button type="button" data-act="copia">Copia codice</button>' +
             '<a href="' + esc(urlIcs) + '">Aggiungi al calendario</a>' +
+            '<a href="' + esc(urlGoogle) + '" target="_blank" rel="noopener">Aggiungi a Google Calendar</a>' +
             '<a href="https://www.google.com/maps/search/?api=1&amp;query=Corso+Giuseppe+Mazzini+128%2C+48018+Faenza+RA" target="_blank" rel="noopener">Come arrivare</a>' +
             '<a href="' + wa + '" target="_blank" rel="noopener">Scrivi su WhatsApp</a>' +
           '</div>' +
