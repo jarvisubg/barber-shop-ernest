@@ -767,7 +767,7 @@
        Outlook possono rifiutare l'importazione. */
     var adesso = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
     return [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ernest Barbershop//IT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ernest Barbershop//IT',
       'BEGIN:VEVENT',
       'UID:' + b.codice + '@barberernest',
       'DTSTAMP:' + adesso,

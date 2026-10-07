@@ -346,6 +346,7 @@
         /* Alternativa che non scarica nessun file: funziona su qualunque
            telefono o computer e dentro i browser di Instagram/Facebook, che
            bloccano i download. */
+        var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
         function g(x) { return x.replace(/[-:]/g, '') + '00'; }
         var urlGoogle = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
           '&text=' + encodeURIComponent('Ernest Barbershop — ' + b.servizi.map(function (x) { return x.nome; }).join(', ')) +
@@ -359,8 +360,15 @@
           '<small>Salva questo codice: ti serve per disdire</small></div>' +
           '<div class="bk-actions">' +
             '<button type="button" data-act="copia">Copia codice</button>' +
-            '<a href="' + esc(urlIcs) + '">Aggiungi al calendario</a>' +
-            '<a href="' + esc(urlGoogle) + '" target="_blank" rel="noopener">Aggiungi a Google Calendar</a>' +
+            (iOS
+              ? '<a href="' + esc(urlIcs) + '">Aggiungi al calendario</a>' +
+                '<a href="' + esc(urlGoogle) + '" target="_blank" rel="noopener">Aggiungi a Google Calendar</a>'
+              /* Fuori da iOS un .ics si scarica soltanto: nessun browser lo
+                 apre nel calendario da solo. Il bottone principale va
+                 direttamente a Google Calendar; il file resta per chi usa
+                 Outlook o Apple Calendar. */
+              : '<a href="' + esc(urlGoogle) + '" target="_blank" rel="noopener">Aggiungi al calendario</a>' +
+                '<a href="' + esc(urlIcs) + '">Scarica file (Apple / Outlook)</a>') +
             '<a href="https://www.google.com/maps/search/?api=1&amp;query=Corso+Giuseppe+Mazzini+128%2C+48018+Faenza+RA" target="_blank" rel="noopener">Come arrivare</a>' +
             '<a href="' + wa + '" target="_blank" rel="noopener">Scrivi su WhatsApp</a>' +
           '</div>' +
