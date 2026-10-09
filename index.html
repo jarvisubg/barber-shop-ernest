@@ -92,8 +92,12 @@
       overscroll-behavior-y: none;
     }
 
-    body::before {
-      content: "";
+    /* Grana: un div vero e non body::before. Safari iOS 26 colora la fascia
+       dell'orologio col fondo della header sticky che trova in cima, ma uno
+       pseudo-elemento di body risulta "body" al suo controllo e la header non
+       viene mai raggiunta: lassù si vedeva il sito scorrere. Un div quasi
+       trasparente e senza pointer-events invece Safari lo salta. */
+    .grain {
       position: fixed;
       inset: 0;
       z-index: 5;
@@ -145,19 +149,6 @@
       border-bottom: 1px solid rgba(241, 242, 240, .16);
       /* opaco: su iOS Safari backdrop-filter senza prefisso non si applica
          e lo sfondo traspariva attraverso la barra */
-      background: var(--ink);
-    }
-
-    /* Safari iOS 26 disegna la pagina anche sotto la barra di stato, sopra la
-       header: senza questo lì si vedeva il sito scorrere. Il pannello allunga
-       la header verso l'alto e copre quella fascia. */
-    .site-header::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 100%;
-      height: 200px;
       background: var(--ink);
     }
 
@@ -519,6 +510,7 @@
   </style>
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
   <a class="skip-link" href="#top">Vai al contenuto</a>
   <header class="site-header">
     <nav class="nav shell" aria-label="Navigazione principale">
